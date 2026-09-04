@@ -552,14 +552,14 @@ def finder(p):
 # it, so this is the same data as a Tahoe panel: a glass title bar over the
 # grid, cells carrying the concentric radius the windows use, and a specular
 # sweep crossing once a cycle the way Liquid Glass catches light. The levels
-# are real, read on 4 Sep 2026 and refreshed with
+# are real, read on 5 Sep 2026 and refreshed with
 #
 #   curl -s https://github.com/users/kevinpradith/contributions
 #
 # taking data-level off each ContributionCalendar-day cell. One string a week,
 # Sunday first, "_" where the calendar carries no day.
 
-GTOTAL, GSTART = 842, date(2025, 8, 31)
+GTOTAL, GSTART = 848, date(2025, 8, 31)
 WEEKS = [
     "0000000", "0000000", "0000000", "0100000", "0000000", "0000001",
     "0000000", "0110100", "0000000", "0000000", "0100010", "0000000",
@@ -569,7 +569,7 @@ WEEKS = [
     "0011111", "1210010", "1011101", "1210100", "0233400", "0000000",
     "0011011", "1111101", "3111100", "0000000", "0001100", "0000000",
     "0000000", "0000000", "0000000", "0000000", "0000000", "0000010",
-    "1100000", "0000000", "0000011", "0311100", "011122_",
+    "1100000", "0000000", "0000011", "0311100", "011123_",
 ]
 
 GW, GH, GBAR = 900, 212, 28          # 900 / 212 = 4.25, near the golden ratio cubed
