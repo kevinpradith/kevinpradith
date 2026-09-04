@@ -1,11 +1,10 @@
 """Generate the macOS desktop pieces used by the profile README.
 
-Three components share one palette and one window chrome:
+Two components share one palette and one window chrome:
 
   hero-<theme>.svg    an animated zsh session, 900x556  (1 : 1.618)
   finder-<theme>.svg  one Finder window cycling projects, focus and toolbox,
                       900x344  (1 : 2.618)
-  icon-<name>.svg     dock icons, 96pt squircles at Apple's 22.37% radius
 
 Window metrics follow macOS: 12pt traffic lights on 20pt centres, 28pt
 title bar on the terminal and a 52pt unified toolbar on Finder, 10pt corner
@@ -459,60 +458,6 @@ def finder(p):
 '''
 
 
-# --------------------------------------------------------------------------
-# dock icons
-# --------------------------------------------------------------------------
-
-ICON, PAD = 96, 12                          # 96 x 0.2237 = 21.5 corner radius, per Apple's squircle
-W_ICON, H_ICON = ICON + PAD * 2, ICON + PAD * 2 + 18
-
-GLYPHS = {
-    "convert": ('#ff7a5a', '#e8452f',
-                '<g fill="none" stroke="#fff" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round">'
-                '<path d="M22 36h48m-13-13 13 13-13 13"/><path d="M74 62H26m13-13-13 13 13 13"/></g>'),
-    "qr": ('#4a4a4e', '#1c1c1e',
-           '<g fill="none" stroke="#fff" stroke-width="5">'
-           '<rect x="20" y="20" width="24" height="24" rx="6"/><rect x="52" y="20" width="24" height="24" rx="6"/>'
-           '<rect x="20" y="52" width="24" height="24" rx="6"/></g>'
-           '<g fill="#fff"><rect x="28" y="28" width="8" height="8" rx="2"/><rect x="60" y="28" width="8" height="8" rx="2"/>'
-           '<rect x="28" y="60" width="8" height="8" rx="2"/><rect x="52" y="52" width="9" height="9" rx="2"/>'
-           '<rect x="67" y="52" width="9" height="9" rx="2"/><rect x="52" y="67" width="9" height="9" rx="2"/>'
-           '<rect x="67" y="67" width="9" height="9" rx="2"/></g>'),
-    "snipsearch": ('#b07bff', '#6e3bd8',
-                   '<rect x="18" y="18" width="44" height="44" rx="8" fill="none" stroke="#fff" stroke-width="4.5" stroke-dasharray="9 7" stroke-linecap="round"/>'
-                   '<circle cx="62" cy="62" r="13" fill="none" stroke="#fff" stroke-width="5.5"/>'
-                   '<path d="M71.5 71.5 80 80" stroke="#fff" stroke-width="6.5" stroke-linecap="round"/>'),
-    "stelegraphy": ('#4ade80', '#12a150',
-                    '<g fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">'
-                    '<path d="M32 18v60"/><path d="M32 20h16l8 12-8 12H32"/><path d="m46 44 18 34"/></g>'),
-    "mail": ('#6fb6ff', '#1e70e0',
-             '<rect x="18" y="28" width="60" height="42" rx="7" fill="#fff"/>'
-             '<path d="m22 34 26 20 26-20" fill="none" stroke="#1e70e0" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>'),
-}
-
-
-def icon(name, label):
-    a, b, glyph = GLYPHS[name]
-    return f'''<svg xmlns="http://www.w3.org/2000/svg" width="{W_ICON}" height="{H_ICON}" viewBox="0 0 {W_ICON} {H_ICON}" role="img" aria-label="{label}">
-<defs>
-<linearGradient id="g" x1="0" y1="0" x2="0.35" y2="1">
-<stop offset="0" stop-color="{a}"/><stop offset="1" stop-color="{b}"/>
-</linearGradient>
-<filter id="sh" x="-30%" y="-30%" width="160%" height="160%">
-<feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#000000" flood-opacity="0.28"/>
-</filter>
-</defs>
-<style>.l {{ {UI} font-size: 12px; }}</style>
-<g filter="url(#sh)"><rect x="{PAD}" y="{PAD}" width="{ICON}" height="{ICON}" rx="21.5" fill="url(#g)"/></g>
-<g transform="translate({PAD},{PAD})">{glyph}</g>
-<text class="l" x="{W_ICON / 2}" y="{ICON + PAD + 15}" text-anchor="middle" fill="#8a8a8f">{label}</text>
-</svg>
-'''
-
-
-DOCK = [("convert", "convert.in"), ("qr", "qr.in"), ("snipsearch", "snipsearch"),
-        ("stelegraphy", "stelegraphy"), ("mail", "email")]
-
 if __name__ == "__main__":
     for name, palette in THEMES:
         with open(f"assets/hero-{name}.svg", "w") as f:
@@ -522,9 +467,4 @@ if __name__ == "__main__":
         path = f"assets/finder-{name}.svg"
         with open(path, "w") as f:
             f.write(finder(palette))
-        print(path)
-    for name, label in DOCK:
-        path = f"assets/icon-{name}.svg"
-        with open(path, "w") as f:
-            f.write(icon(name, label))
         print(path)
