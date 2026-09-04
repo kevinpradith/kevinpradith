@@ -21,7 +21,7 @@ percent rather than opening gaps between them.
 
 import html
 
-MARGIN, RADIUS = 24, 10
+MARGIN, RADIUS, FRADIUS = 24, 14, 24   # Tahoe rounds hard, and rounds windows with a toolbar harder
 LIGHTS = [("#ed6a5f", "#e24b41"), ("#f6be50", "#e1a73e"), ("#61c555", "#2dac2f")]
 
 LIGHT = dict(body="#ffffff", bar="#ececec", side="#f2f2f2", alt="#fafafa",
@@ -38,19 +38,18 @@ MONO = ('font-family: "SF Mono", SFMono-Regular, ui-monospace, Menlo, Monaco, '
         '"Cascadia Mono", "DejaVu Sans Mono", "Liberation Mono", "Courier New", monospace;')
 
 
-def chrome(p, w, h, bar):
+def chrome(p, w, h, bar, radius=RADIUS, bar_x0=0):
     """Shadowed rounded window, clipped so the bar and sidebar keep the corners."""
     ox = oy = MARGIN
-    head = (f'<defs><clipPath id="win"><rect x="{ox}" y="{oy}" width="{w}" height="{h}" rx="{RADIUS}"/></clipPath>'
+    head = (f'<defs><clipPath id="win"><rect x="{ox}" y="{oy}" width="{w}" height="{h}" rx="{radius}"/></clipPath>'
             f'<filter id="sh" x="-30%" y="-30%" width="160%" height="160%">'
             f'<feDropShadow dx="0" dy="9" stdDeviation="13" flood-color="#000000" flood-opacity="{p["shadow"]}"/>'
             f'</filter></defs>'
-            f'<g filter="url(#sh)"><rect x="{ox}" y="{oy}" width="{w}" height="{h}" rx="{RADIUS}" fill="{p["body"]}"/></g>'
-            f'<g clip-path="url(#win)"><rect x="{ox}" y="{oy}" width="{w}" height="{bar}" fill="{p["bar"]}"/>')
+            f'<g filter="url(#sh)"><rect x="{ox}" y="{oy}" width="{w}" height="{h}" rx="{radius}" fill="{p["body"]}"/></g>'
+            f'<g clip-path="url(#win)"><rect x="{ox + bar_x0}" y="{oy}" width="{w - bar_x0}" height="{bar}" fill="{p["bar"]}"/>')
     dots = "".join(f'<circle cx="{ox + 20 + n * 20}" cy="{oy + 26 if bar > 40 else oy + bar / 2}" r="6" '
                    f'fill="{f}" stroke="{s}" stroke-width="0.5"/>' for n, (f, s) in enumerate(LIGHTS))
-    tail = (f'</g><line x1="{ox}" y1="{oy + bar}" x2="{ox + w}" y2="{oy + bar}" stroke="{p["hair"]}" stroke-width="1"/>'
-            f'{dots}<rect x="{ox + 0.5}" y="{oy + 0.5}" width="{w - 1}" height="{h - 1}" rx="{RADIUS}" '
+    tail = (f'</g>{dots}<rect x="{ox + 0.5}" y="{oy + 0.5}" width="{w - 1}" height="{h - 1}" rx="{radius}" '
             f'fill="none" stroke="{p["edge"]}" stroke-opacity="{p["rim"]}" stroke-width="1"/>')
     return head, tail
 
@@ -64,7 +63,7 @@ PAD_X, PAD_TOP = 38, 20
 FS, LH, CW = 15, 24, 9.0        # 15 x 1.618 = 24 line height, 15 x 0.6 = 9 advance
 CHAR_S, ENTER_S, OUT_S, BLANK_S = 0.075, 0.28, 0.26, 0.13
 START_S, HOLD_S, BLINK_S = 0.6, 4.8, 0.53
-PROMPT = "~ % "                 # zsh with PROMPT='%1~ %# '
+PROMPT = "kevin@pradith ~ % "   # zsh with PROMPT='%n@%m %1~ %# '
 
 SCRIPT = [
     ("dim", "Last login: Fri Sep  4 09:41:12 on ttys001"),
@@ -123,6 +122,7 @@ def mono(x, y, text, fill):
 def terminal(p):
     lines, cycle, idle_at = schedule()
     head, tail = chrome(p, TW, TH, TBAR)
+    bar_line = f'<line x1="{MARGIN}" y1="{MARGIN + TBAR}" x2="{MARGIN + TW}" y2="{MARGIN + TBAR}" stroke="{p["hair"]}" stroke-width="1"/>'
     top = MARGIN + TBAR + PAD_TOP
     x, pw = MARGIN + PAD_X, len(PROMPT) * CW
     out, still, clips = [], [], []
@@ -189,7 +189,8 @@ def terminal(p):
 </style>
 <defs>{"".join(clips)}</defs>
 {head}
-<text class="u" x="{MARGIN + TW / 2}" y="{MARGIN + 19}" text-anchor="middle" fill="{p["title"]}">kevin · zsh · 90×20</text>
+{bar_line}
+<text class="u" x="{MARGIN + TW / 2}" y="{MARGIN + 19}" text-anchor="middle" fill="{p["title"]}">kevin@pradith · zsh · 90×20</text>
 <g class="typed">
 {chr(10).join(out)}
 {cursor}
@@ -203,42 +204,49 @@ def terminal(p):
 
 
 # --------------------------------------------------------------------------
-# finder
+# finder, drawn to match macOS 26 Tahoe
 # --------------------------------------------------------------------------
-# finder
-# --------------------------------------------------------------------------
+#
+# Tahoe replaced Sequoia's tight window corners with a much larger radius, and
+# a window carrying a toolbar rounds harder still, so Finder uses FRADIUS while
+# the terminal keeps the smaller radius Terminal.app kept. The sidebar and the
+# toolbar are one Liquid Glass layer: the sidebar runs the full height of the
+# window, up behind the traffic lights, and the toolbar sits on the same plane
+# with no rule under it. Toolbar buttons now always show their grouped capsule
+# rather than appearing on hover, and inner radii are concentric with the
+# window, so the capsules and the selection pills stay in the same family.
 
-FW, FH, FBAR, SIDE = 900, 344, 52, 180      # 900 / 344 = 2.6163, golden ratio squared
-ROW, HEADER, STATUS = 26, 25, 24
+FW, FH, FBAR, SIDE = 900, 344, 52, 170      # 900 / 344 = 2.6163, golden ratio squared
+ROW, HEADER = 24, 25
 
 SIDEBAR = ["AirDrop", "Recents", "Applications", "Desktop", "Documents",
            "projects", "focus", "toolbox"]
 
-# Two Finder column layouts. Sizes and dates in projects come from the GitHub
-# API; focus and toolbox use the Comments column instead of inventing any.
+# projects keeps the columns Finder shows by default. focus and toolbox swap
+# Size and Date Modified for Comments, so nothing on screen is invented.
 FOLDERS = {
     "projects": dict(
-        icon="folder", available="843.2 GB",
-        columns=[("Name", 14, "start"), ("Tags", 302, "start"),
-                 ("Size", 520, "end"), ("Date Modified", 544, "start")],
-        rules=[292, 432, 532],
-        rows=[("convert.in", ("TypeScript", "#3178c6"), "1.3 MB", "Sep 3, 2026 at 00:28"),
-              ("qr.in", ("HTML", "#e34c26"), "229 KB", "Sep 4, 2026 at 07:49"),
-              ("snipsearch", ("PowerShell", "#5391fe"), "29 KB", "Sep 4, 2026 at 00:08"),
-              ("stelegraphy", ("TypeScript", "#3178c6"), "380 KB", "Sep 3, 2026 at 10:26")]),
+        icon="folder", disclosure=True,
+        columns=[("Name", 50, "start"), ("Date Modified", 300, "start"),
+                 ("Size", 550, "end"), ("Tags", 574, "start")],
+        rules=[290, 460, 560],
+        rows=[("convert.in", "Sep 3, 2026 at 00:28", "1.3 MB", ("TypeScript", "#3178c6")),
+              ("qr.in", "Sep 4, 2026 at 07:49", "229 KB", ("HTML", "#e34c26")),
+              ("snipsearch", "Sep 4, 2026 at 00:08", "29 KB", ("PowerShell", "#5391fe")),
+              ("stelegraphy", "Sep 3, 2026 at 10:26", "380 KB", ("TypeScript", "#3178c6"))]),
     "focus": dict(
-        icon="doc", available="843.2 GB",
-        columns=[("Name", 14, "start"), ("Kind", 262, "start"), ("Comments", 402, "start")],
-        rules=[252, 392],
+        icon="doc", disclosure=False,
+        columns=[("Name", 50, "start"), ("Kind", 260, "start"), ("Comments", 400, "start")],
+        rules=[250, 390],
         rows=[("authorization.md", "Bug class", "IDOR, tenant isolation, privilege boundaries"),
               ("ssrf.md", "Bug class", "internal metadata, blind callbacks, filter bypass"),
               ("exposed-config.md", "Bug class", "leaked env, build manifests, open storage"),
               ("local-first.md", "Principle", "if it runs in the browser it needs no server"),
               ("reporting.md", "Principle", "reproducible steps, demonstrated impact")]),
     "toolbox": dict(
-        icon="app", available="843.2 GB",
-        columns=[("Name", 14, "start"), ("Kind", 262, "start"), ("Comments", 402, "start")],
-        rules=[252, 392],
+        icon="app", disclosure=False,
+        columns=[("Name", 50, "start"), ("Kind", 260, "start"), ("Comments", 400, "start")],
+        rules=[250, 390],
         rows=[("TypeScript", "Language", "apps and CLIs that share one core"),
               ("Node", "Runtime", "build scripts and CLI entry points"),
               ("PowerShell", "Shell", "Windows tooling, snipsearch"),
@@ -248,6 +256,16 @@ FOLDERS = {
               ("Kubernetes", "Orchestrator", "lab clusters on MicroK8s"),
               ("WSL", "Subsystem", "Linux tooling on a Windows machine")]),
 }
+
+FINDER_LIGHT = dict(body="#ffffff", bar="#f0f0f2", alt="#f7f7f8", btn="#e4e4e7",
+                    edge="#c9c9cd", hair="#e2e2e4", title="#1d1d1f", text="#1d1d1f",
+                    dim="#74747a", head="#8a8a8e", glyph="#3c3c3f", sel="#0a63fe",
+                    shadow=0.22, rim=0.5)
+FINDER_DARK = dict(body="#1f1f21", bar="#2a2a2d", alt="#252528", btn="#3a3a3e",
+                   edge="#ffffff", hair="#3a3a3d", title="#f5f5f7", text="#f5f5f7",
+                   dim="#9a9aa0", head="#8e8e93", glyph="#d8d8dc", sel="#0a63fe",
+                   shadow=0.55, rim=0.14)
+FINDER_THEMES = (("light", FINDER_LIGHT), ("dark", FINDER_DARK))
 
 
 def folder(x, y, s=16, tint="#4d9dfb"):
@@ -269,7 +287,7 @@ def row_icon(kind, x, y, p):
                 f'<path d="M{x + 9} {y + 1}v4h4" fill="none" stroke="{p["dim"]}" stroke-width="1.1"/>'
                 + "".join(f'<path d="M{x + 4} {y + 7 + n * 2.6}h6.5" stroke="{p["dim"]}" stroke-width="1"/>'
                           for n in range(3)))
-    return (f'<rect x="{x + 1}" y="{y + 1}" width="14" height="14" rx="3.6" fill="{p["sel"]}" fill-opacity="0.85"/>'
+    return (f'<rect x="{x + 1}" y="{y + 1}" width="14" height="14" rx="4.4" fill="{p["sel"]}" fill-opacity="0.9"/>'
             f'<circle cx="{x + 8}" cy="{y + 8}" r="2.6" fill="#ffffff"/>')
 
 
@@ -280,8 +298,8 @@ def side_glyph(name, x, y, tint):
                    f'<circle cx="{x + 8}" cy="{y + 9}" r="2.5" fill="{tint}"/>',
         "Recents": f'<circle cx="{x + 8}" cy="{y + 8}" r="7" fill="none" stroke="{tint}" stroke-width="1.5"/>'
                    f'<path d="M{x + 8} {y + 4}v4.5l3 2" fill="none" stroke="{tint}" stroke-width="1.5" stroke-linecap="round"/>',
-        "Applications": f'<rect x="{x + 1}" y="{y + 1}" width="14" height="14" rx="4" fill="none" stroke="{tint}" stroke-width="1.5"/>'
-                        f'<circle cx="{x + 8}" cy="{y + 8}" r="2.2" fill="{tint}"/>',
+        "Applications": f'<path d="M{x + 2.5} {y + 13.5}l5.5-11 5.5 11" fill="none" stroke="{tint}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'
+                        f'<path d="M{x + 5.2} {y + 9.5}h5.6" stroke="{tint}" stroke-width="1.6" stroke-linecap="round"/>',
         "Desktop": f'<rect x="{x + 1}" y="{y + 2}" width="14" height="9.5" rx="1.6" fill="none" stroke="{tint}" stroke-width="1.5"/>'
                    f'<path d="M{x + 5} {y + 14}h6" stroke="{tint}" stroke-width="1.5" stroke-linecap="round"/>',
         "Documents": f'<path d="M{x + 3} {y + 1.5}h6l4 4v9a1.5 1.5 0 0 1-1.5 1.5h-8.5A1.5 1.5 0 0 1 {x + 1.5} {y + 14.5}v-11.5A1.5 1.5 0 0 1 {x + 3} {y + 1.5}Z" '
@@ -290,52 +308,66 @@ def side_glyph(name, x, y, tint):
     return g.get(name, folder(x, y + 1, 15, tint))
 
 
-def toolbar_glyph(x, y, kind, tint):
-    """View switcher segments: icon grid, list, columns, gallery."""
-    if kind == "grid":
-        return "".join(f'<rect x="{x + 3 + c * 5}" y="{y + 3 + r * 5}" width="3.4" height="3.4" rx="1" fill="{tint}"/>'
-                       for r in range(2) for c in range(2))
+def capsule(p, x, y, w, h=28, r=9):
+    """Tahoe shows toolbar button groups all the time, not only on hover."""
+    return f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{r}" fill="{p["btn"]}" fill-opacity="0.85"/>'
+
+
+def tool_glyph(p, kind, x, y):
+    """SF Symbols in the toolbar, each drawn around a 16 unit box at x, y."""
+    c, sw = p["glyph"], 1.6
     if kind == "list":
-        return "".join(f'<path d="M{x + 3} {y + 4 + n * 4}h10" stroke="{tint}" stroke-width="1.6" stroke-linecap="round"/>'
+        return "".join(f'<circle cx="{x + 2}" cy="{y + 3 + n * 5}" r="1.1" fill="{c}"/>'
+                       f'<path d="M{x + 6} {y + 3 + n * 5}h9" stroke="{c}" stroke-width="{sw}" stroke-linecap="round"/>'
                        for n in range(3))
-    if kind == "columns":
-        return "".join(f'<path d="M{x + 3 + n * 4.5} {y + 3}v10" stroke="{tint}" stroke-width="1.6" stroke-linecap="round"/>'
-                       for n in range(3))
-    return (f'<rect x="{x + 2.5}" y="{y + 3}" width="11" height="6.5" rx="1.4" fill="none" stroke="{tint}" stroke-width="1.5"/>'
-            f'<path d="M{x + 5} {y + 12.5}h6" stroke="{tint}" stroke-width="1.5" stroke-linecap="round"/>')
+    if kind == "sort":
+        return (f'<path d="M{x + 4} {y + 5}l3-3.5 3 3.5" fill="none" stroke="{c}" stroke-width="{sw}" stroke-linecap="round" stroke-linejoin="round"/>'
+                f'<path d="M{x + 4} {y + 9}l3 3.5 3-3.5" fill="none" stroke="{c}" stroke-width="{sw}" stroke-linecap="round" stroke-linejoin="round"/>')
+    if kind == "group":
+        return ("".join(f'<rect x="{x + 1 + col * 5.5}" y="{y + 2 + row * 5.5}" width="4" height="4" rx="1.2" fill="{c}"/>'
+                        for row in range(2) for col in range(3))
+                + f'<path d="M{x + 19} {y + 6}l2.5 3 2.5-3" fill="none" stroke="{c}" stroke-width="{sw}" stroke-linecap="round" stroke-linejoin="round"/>')
+    if kind == "share":
+        return (f'<path d="M{x + 8} {y + 11}V{y + 1}m0 0-3.5 3.5M{x + 8} {y + 1}l3.5 3.5" fill="none" stroke="{c}" stroke-width="{sw}" stroke-linecap="round" stroke-linejoin="round"/>'
+                f'<path d="M{x + 3} {y + 7}H{x + 1.5}v7.5h13V{y + 7}H{x + 13}" fill="none" stroke="{c}" stroke-width="{sw}" stroke-linecap="round" stroke-linejoin="round"/>')
+    if kind == "tag":
+        return (f'<path d="M{x + 1.5} {y + 2.5}h6.5l6.5 6.5-6.5 6-6.5-6.5Z" fill="none" stroke="{c}" stroke-width="{sw}" stroke-linejoin="round"/>'
+                f'<circle cx="{x + 5}" cy="{y + 6}" r="1.4" fill="{c}"/>')
+    if kind == "more":
+        return ("".join(f'<circle cx="{x + 2 + n * 5}" cy="{y + 8}" r="1.5" fill="{c}"/>' for n in range(3))
+                + f'<circle cx="{x + 7} " cy="{y + 8}" r="8" fill="none" stroke="{c}" stroke-width="1.3" stroke-opacity="0.7"/>')
+    return (f'<circle cx="{x + 7} " cy="{y + 7}" r="5.5" fill="none" stroke="{c}" stroke-width="{sw}"/>'
+            f'<path d="M{x + 11} {y + 11}l4 4" stroke="{c}" stroke-width="{sw}" stroke-linecap="round"/>')
 
 
 def finder(p, key):
     spec = FOLDERS[key]
-    head, tail = chrome(p, FW, FH, FBAR)
+    head, tail = chrome(p, FW, FH, FBAR, FRADIUS, SIDE)
     ox = oy = MARGIN
     cx = ox + SIDE
     body = [head]
 
-    # sidebar, drawn inside the window clip so it keeps the rounded corner
-    body.append(f'<rect x="{ox}" y="{oy + FBAR}" width="{SIDE}" height="{FH - FBAR}" fill="{p["side"]}"/>')
-    body.append(f'<text class="s" x="{ox + 18}" y="{oy + FBAR + 24}" fill="{p["dim"]}">Favorites</text>')
+    # one glass layer: the sidebar runs the full height, the toolbar continues it
+    body.append(f'<rect x="{ox}" y="{oy}" width="{SIDE}" height="{FH}" fill="{p["bar"]}"/>')
+    body.append(f'<path d="M{cx} {oy}v{FH}" stroke="{p["hair"]}" stroke-width="1"/>')
+    body.append(f'<text class="s" x="{ox + 18}" y="{oy + FBAR + 18}" fill="{p["head"]}">Favourites</text>')
     for n, item in enumerate(SIDEBAR):
-        y = oy + FBAR + 34 + n * 28
+        y = oy + FBAR + 28 + n * 28
         on = item == key
         if on:
-            body.append(f'<rect x="{ox + 8}" y="{y}" width="{SIDE - 16}" height="24" rx="6" fill="{p["sel"]}"/>')
-        tint = "#ffffff" if on else p["sel"]
-        body.append(side_glyph(item, ox + 18, y + 4, tint))
-        body.append(f'<text class="b" x="{ox + 42}" y="{y + 16}" fill="{"#ffffff" if on else p["text"]}">{item}</text>')
+            body.append(f'<rect x="{ox + 8}" y="{y}" width="{SIDE - 16}" height="26" rx="8" fill="{p["sel"]}"/>')
+        tint = "#ffffff" if on else "#4d9dfb"
+        body.append(side_glyph(item, ox + 18, y + 5, tint))
+        body.append(f'<text class="b" x="{ox + 42}" y="{y + 17}" fill="{"#ffffff" if on else p["text"]}">{item}</text>')
 
-    # column headers, sorted by Name
+    # column headers, sorted by Name ascending
     hy = oy + FBAR
-    body.append(f'<rect x="{cx}" y="{hy}" width="{FW - SIDE}" height="{HEADER}" fill="{p["body"]}"/>')
     for sx in spec["rules"]:
-        body.append(f'<path d="M{cx + sx} {hy + 5}v{HEADER - 10}" stroke="{p["hair"]}" stroke-width="1"/>')
+        body.append(f'<path d="M{cx + sx} {hy + 6}v{HEADER - 12}" stroke="{p["hair"]}" stroke-width="1"/>')
     for label, lx, anchor in spec["columns"]:
-        first = label == "Name"
-        body.append(f'<text class="s" x="{cx + lx}" y="{hy + 17}" text-anchor="{anchor}" '
-                    f'fill="{p["text"] if first else p["dim"]}">{label}</text>')
-        if first:
-            body.append(f'<path d="M{cx + lx + 41} {hy + 14}l3.5-4 3.5 4" fill="none" stroke="{p["dim"]}" '
-                        f'stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>')
+        body.append(f'<text class="s" x="{cx + lx}" y="{hy + 17}" text-anchor="{anchor}" fill="{p["dim"]}">{label}</text>')
+    body.append(f'<path d="M{cx + spec["rules"][0] - 18} {hy + 14}l3.5-4 3.5 4" fill="none" stroke="{p["dim"]}" '
+                f'stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>')
     body.append(f'<path d="M{cx} {hy + HEADER}h{FW - SIDE}" stroke="{p["hair"]}" stroke-width="1"/>')
 
     # rows
@@ -343,50 +375,41 @@ def finder(p, key):
         y = hy + HEADER + n * ROW
         if n % 2:
             body.append(f'<rect x="{cx}" y="{y}" width="{FW - SIDE}" height="{ROW}" fill="{p["alt"]}"/>')
-        body.append(row_icon(spec["icon"], cx + 14, y + 5, p))
-        body.append(f'<text class="b" x="{cx + 38}" y="{y + 17}" fill="{p["text"]}">{cells[0]}</text>')
+        if spec["disclosure"]:
+            body.append(f'<path d="M{cx + 14} {y + 8}l4 4-4 4" fill="none" stroke="{p["dim"]}" stroke-width="1.5" '
+                        f'stroke-linecap="round" stroke-linejoin="round"/>')
+        body.append(row_icon(spec["icon"], cx + 26, y + 4, p))
+        body.append(f'<text class="b" x="{cx + 50}" y="{y + 16}" fill="{p["text"]}">{cells[0]}</text>')
         for (label, lx, anchor), value in zip(spec["columns"][1:], cells[1:]):
             if isinstance(value, tuple):      # a Finder tag: coloured dot plus name
-                body.append(f'<circle cx="{cx + lx + 4}" cy="{y + 13}" r="4.5" fill="{value[1]}"/>')
-                body.append(f'<text class="b" x="{cx + lx + 16}" y="{y + 17}" fill="{p["dim"]}">{value[0]}</text>')
+                body.append(f'<circle cx="{cx + lx + 4}" cy="{y + 12}" r="4.5" fill="{value[1]}"/>')
+                body.append(f'<text class="b" x="{cx + lx + 16}" y="{y + 16}" fill="{p["dim"]}">{value[0]}</text>')
             else:
-                body.append(f'<text class="b" x="{cx + lx}" y="{y + 17}" text-anchor="{anchor}" '
+                body.append(f'<text class="b" x="{cx + lx}" y="{y + 16}" text-anchor="{anchor}" '
                             f'fill="{p["dim"]}">{html.escape(value)}</text>')
-
-    # status bar
-    sy = oy + FH - STATUS
-    body.append(f'<rect x="{ox}" y="{sy}" width="{FW}" height="{STATUS}" fill="{p["bar"]}"/>')
-    body.append(f'<path d="M{ox} {sy}h{FW}" stroke="{p["hair"]}" stroke-width="1"/>')
-    body.append(f'<text class="s" x="{ox + FW / 2}" y="{sy + 16}" text-anchor="middle" fill="{p["dim"]}">'
-                f'{len(spec["rows"])} items, {spec["available"]} available</text>')
-    body.append(f'<path d="M{cx} {oy + FBAR}v{FH - FBAR}" stroke="{p["hair"]}" stroke-width="1"/>')
     body.append(tail)
 
-    # toolbar sits above the clip so its glyphs stay crisp
-    tb = [f'<path d="M{ox + 96} {oy + 20}l-5 6 5 6" fill="none" stroke="{p["dim"]}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>',
-          f'<path d="M{ox + 122} {oy + 20}l5 6-5 6" fill="none" stroke="{p["dim"]}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>',
-          folder(ox + FW / 2 - 48, oy + 18, 15),
-          f'<text class="t" x="{ox + FW / 2 - 26}" y="{oy + 31}" fill="{p["title"]}">{key}</text>']
-    vx = ox + FW - 232
-    tb.append(f'<rect x="{vx}" y="{oy + 15}" width="88" height="23" rx="6" fill="{p["body"]}" fill-opacity="0.6" stroke="{p["hair"]}" stroke-width="1"/>')
-    for n, kind in enumerate(("grid", "list", "columns", "gallery")):
-        gx = vx + 3 + n * 21
-        if kind == "list":
-            tb.append(f'<rect x="{gx}" y="{oy + 17.5}" width="19" height="18" rx="5" fill="{p["hair"]}" fill-opacity="0.9"/>')
-        tb.append(toolbar_glyph(gx + 2, oy + 19, kind, p["title"] if kind == "list" else p["dim"]))
-    for n in range(3):  # group, share, more
-        gx = ox + FW - 128 + n * 34
-        tb.append(f'<circle cx="{gx}" cy="{oy + 26}" r="11" fill="{p["body"]}" fill-opacity="0.45"/>')
-    tb.append(f'<path d="M{ox + FW - 133} {oy + 22}h10M{ox + FW - 133} {oy + 26}h10M{ox + FW - 133} {oy + 30}h6" stroke="{p["dim"]}" stroke-width="1.6" stroke-linecap="round"/>')
-    tb.append(f'<path d="M{ox + FW - 94} {oy + 31}v-9m0-9 4 4m-4-4-4 4" fill="none" stroke="{p["dim"]}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" transform="translate(0,4)"/>')
-    tb.append("".join(f'<circle cx="{ox + FW - 65 + n * 5}" cy="{oy + 26}" r="1.6" fill="{p["dim"]}"/>' for n in range(3)))
+    # toolbar, above the clip so the glyphs stay crisp
+    tb = [capsule(p, cx + 12, oy + 12, 66),
+          f'<path d="M{cx + 32} {oy + 20}l-5 6 5 6" fill="none" stroke="{p["glyph"]}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>',
+          f'<path d="M{cx + 58} {oy + 20}l5 6-5 6" fill="none" stroke="{p["glyph"]}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>',
+          f'<text class="w" x="{cx + 96}" y="{oy + 32}" fill="{p["title"]}">{key}</text>']
+    groups = [("list", "sort"), ("group",), ("share",), ("tag",), ("more",), ("search",)]
+    gx = ox + FW - 20
+    for names in reversed(groups):
+        w = 30 * len(names) + 14
+        gx -= w
+        tb.append(capsule(p, gx, oy + 12, w))
+        for n, name in enumerate(names):
+            tb.append(tool_glyph(p, name, gx + 7 + n * 30, oy + 18))
+        gx -= 8
 
     listing = "; ".join(", ".join(c[0] if isinstance(c, tuple) else c for c in row) for row in spec["rows"])
     return f'''<svg xmlns="http://www.w3.org/2000/svg" width="{FW + MARGIN * 2}" height="{FH + MARGIN * 2}" viewBox="0 0 {FW + MARGIN * 2} {FH + MARGIN * 2}" role="img" aria-labelledby="t d">
 <title id="t">The {key} folder in Finder</title>
-<desc id="d">A macOS Finder window in list view, with {key} selected in the sidebar. It lists: {html.escape(listing)}.</desc>
+<desc id="d">A macOS Tahoe Finder window in list view, with {key} selected in the sidebar. It lists: {html.escape(listing)}.</desc>
 <style>
-.t {{ {UI} font-size: 13px; font-weight: 600; }}
+.w {{ {UI} font-size: 15px; font-weight: 600; }}
 .b {{ {UI} font-size: 13px; }}
 .s {{ {UI} font-size: 11px; font-weight: 500; }}
 </style>
@@ -454,6 +477,7 @@ if __name__ == "__main__":
         with open(f"assets/hero-{name}.svg", "w") as f:
             f.write(terminal(palette))
         print(f"assets/hero-{name}.svg")
+    for name, palette in FINDER_THEMES:
         for key in FOLDERS:
             path = f"assets/finder-{key}-{name}.svg"
             with open(path, "w") as f:
