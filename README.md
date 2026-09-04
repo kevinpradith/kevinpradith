@@ -22,5 +22,5 @@
 </p>
 
 <p align="center">
-  <sub>Everything here is MIT. Take it, fork it, ship it.</sub>
+  <sub>Drawn by hand in SVG, rebuilt every morning from whatever GitHub says I did.</sub>
 </p>

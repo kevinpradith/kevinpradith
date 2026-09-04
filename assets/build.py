@@ -22,6 +22,7 @@ percent rather than opening gaps between them.
 import html
 import json
 import os
+import pathlib
 import re
 import urllib.request
 from datetime import date, datetime, timedelta
@@ -351,6 +352,11 @@ SIDEBAR = ["AirDrop", "Recents", "Applications",
 # projects keeps the columns Finder shows by default. The other folders swap
 # Size for Comments, so nothing on screen is invented: every date, credential
 # and placement below is the real one.
+# The two folders with no API behind them are typed by hand, so they live in
+# assets/data.json and not in this file. Edit that, then rebuild.
+HAND_ROWS = json.loads((pathlib.Path(__file__).parent / "data.json").read_text())
+
+
 FOLDERS = {
     "projects": dict(
         icon="folder", disclosure=True,
@@ -363,24 +369,13 @@ FOLDERS = {
         columns=[("Name", 50, "start"), ("Kind", 330, "start"),
                  ("Date Modified", 460, "start"), ("Comments", 600, "start")],
         rules=[320, 450, 590],
-        rows=[("aws-cloud-genai.pdf", "Dicoding", "Feb 2026", "2VX302O83XYQ"),
-              ("azure-genai.pdf", "Dicoding", "Apr 2026", "0LZ0YR3LNX65"),
-              ("backend-javascript.pdf", "Dicoding", "Feb 2026", "L4PQ93142PO1"),
-              ("javascript-dasar.pdf", "Dicoding", "Feb 2026", "KEXLQ313WPG2"),
-              ("microsoft-fabric.pdf", "Dicoding", "Mar 2026", "4EXG1NYVDPRL"),
-              ("python-dasar.pdf", "Dicoding", "Apr 2026", "KEXLQ78KWPG2")]),
+        rows=HAND_ROWS["certifications"]),
     "awards": dict(
         icon="doc", disclosure=False,
         columns=[("Name", 50, "start"), ("Kind", 300, "start"),
                  ("Date Modified", 430, "start"), ("Comments", 545, "start")],
         rules=[290, 420, 535],
-        rows=[("technotainment-uiux.pdf", "1st place", "Jul 2026", "Trunojoyo Madura"),
-              ("iofest-webdev.pdf", "1st place", "Jun 2026", "Tarumanagara"),
-              ("lks-cybersecurity.pdf", "2nd place", "Jun 2026", "Disdik Jawa Barat"),
-              ("ibfest-cyberlite.pdf", "2nd place", "May 2026", "Telkomsel"),
-              ("samsung-ai.pdf", "Winner", "May 2026", "Samsung Indonesia"),
-              ("ehax-ctf.pdf", "Top 88 of 887", "Mar 2026", "Delhi Technological University"),
-              ("jhic-infra.pdf", "Semi-finalist", "Nov 2025", "Jagoan Hosting")]),
+        rows=HAND_ROWS["awards"]),
 }
 
 FINDER_LIGHT = dict(body="#ffffff", bar="#f0f0f2", panel="#f6f6f8", alt="#f7f7f8", btn="#e4e4e7",

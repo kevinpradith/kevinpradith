@@ -1,0 +1,3 @@
+# The six SVGs are build output. Collapse them in diffs and keep them out of
+# the language stats, so a daily refresh commit stays readable.
+assets/*.svg linguist-generated=true
