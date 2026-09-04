@@ -1,0 +1,33 @@
+name: refresh profile artwork
+
+# The README is six static SVG files, so nothing can be live at view time.
+# This rebuilds them once a day from the GitHub API and the contribution
+# calendar, and commits only when the drawing actually changed.
+
+on:
+  schedule:
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Redraw the windows
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 assets/build.py
+
+      - name: Commit whatever moved
+        run: |
+          git config user.name "Kevin Praditiansyah"
+          git config user.email "kevinpradithh@gmail.com"
+          git add assets
+          git diff --cached --quiet && echo "nothing changed today" && exit 0
+          git commit -m "chore: refresh the profile artwork from today's GitHub data"
+          git push

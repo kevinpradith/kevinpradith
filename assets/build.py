@@ -20,7 +20,73 @@ percent rather than opening gaps between them.
 """
 
 import html
-from datetime import date, timedelta
+import json
+import os
+import re
+import urllib.request
+from datetime import date, datetime, timedelta
+
+USER = "kevinpradith"
+
+
+def fetch(url):
+    """Both endpoints answer without a token. GITHUB_TOKEN only raises the
+    rate limit, which is what the scheduled workflow uses."""
+    headers = {"User-Agent": USER}
+    token = os.environ.get("GITHUB_TOKEN")
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    req = urllib.request.Request(url, headers=headers)
+    with urllib.request.urlopen(req, timeout=30) as r:
+        return r.read().decode()
+
+
+# Finder shows a language tag as a coloured dot, using GitHub's own colours.
+LANG_TINT = {"TypeScript": "#3178c6", "JavaScript": "#f1e05a", "HTML": "#e34c26",
+             "CSS": "#663399", "Python": "#3572a5", "PowerShell": "#5391fe",
+             "Shell": "#89e051", "Go": "#00add8", "Rust": "#dea584", "C": "#555555"}
+
+
+def projects_rows(limit=7):
+    """Every public repo except this profile one, newest push first."""
+    repos = json.loads(fetch(f"https://api.github.com/users/{USER}/repos?per_page=100"))
+    keep = [r for r in repos if r["name"] != USER and not r["fork"]]
+    keep.sort(key=lambda r: r["pushed_at"], reverse=True)
+    rows = []
+    for r in keep[:limit]:
+        kb = r["size"]
+        size = f"{kb / 1024:.1f} MB" if kb >= 1024 else f"{kb} KB"
+        when = datetime.strptime(r["pushed_at"], "%Y-%m-%dT%H:%M:%SZ")
+        lang = r["language"] or "Other"
+        rows.append((r["name"], when.strftime("%b %-d, %Y at %H:%M"), size,
+                     (lang, LANG_TINT.get(lang, "#8a8a8e"))))
+    rows.sort(key=lambda row: row[0])
+    return rows
+
+
+def contribution_year():
+    """The calendar GitHub draws on the profile, read back as one string a week.
+
+    Sunday first, "_" for a day the calendar does not carry. Returns the
+    total, the first Sunday, and the weeks.
+    """
+    page = fetch(f"https://github.com/users/{USER}/contributions")
+    days = {}
+    for cell in re.findall(r"<td[^>]*ContributionCalendar-day[^>]*>", page):
+        d = re.search(r'data-date="([^"]+)"', cell)
+        lvl = re.search(r'data-level="(\d+)"', cell)
+        if d and lvl:
+            days[d.group(1)] = lvl.group(1)
+    if not days:
+        raise SystemExit("contribution calendar came back empty, GitHub markup changed")
+    total = int(re.search(r"([\d,]+)\s+contributions?\s+in", page).group(1).replace(",", ""))
+    start = date.fromisoformat(min(days))
+    last = date.fromisoformat(max(days))
+    weeks = []
+    while start + timedelta(days=7 * len(weeks)) <= last:
+        first = start + timedelta(days=7 * len(weeks))
+        weeks.append("".join(days.get((first + timedelta(days=i)).isoformat(), "_") for i in range(7)))
+    return total, start, weeks
 
 MARGIN, RADIUS, FRADIUS = 34, 16, 26   # Tahoe rounds hard, and rounds windows with a toolbar harder
 GAP = MARGIN * 2                       # the space between the two windows, 68, set here not in the README
@@ -249,10 +315,7 @@ FOLDERS = {
         columns=[("Name", 50, "start"), ("Date Modified", 300, "start"),
                  ("Size", 550, "end"), ("Tags", 574, "start")],
         rules=[290, 460, 560],
-        rows=[("convert.in", "Sep 3, 2026 at 00:28", "1.3 MB", ("TypeScript", "#3178c6")),
-              ("qr.in", "Sep 4, 2026 at 07:49", "229 KB", ("HTML", "#e34c26")),
-              ("snipsearch", "Sep 4, 2026 at 00:08", "29 KB", ("PowerShell", "#5391fe")),
-              ("stelegraphy", "Sep 3, 2026 at 10:26", "380 KB", ("TypeScript", "#3178c6"))]),
+        rows=projects_rows()),
     "certifications": dict(
         icon="doc", disclosure=False,
         columns=[("Name", 50, "start"), ("Kind", 330, "start"),
@@ -552,25 +615,9 @@ def finder(p):
 # it, so this is the same data as a Tahoe panel: a glass title bar over the
 # grid, cells carrying the concentric radius the windows use, and a specular
 # sweep crossing once a cycle the way Liquid Glass catches light. The levels
-# are real, read on 5 Sep 2026 and refreshed with
-#
-#   curl -s https://github.com/users/kevinpradith/contributions
-#
-# taking data-level off each ContributionCalendar-day cell. One string a week,
-# Sunday first, "_" where the calendar carries no day.
+# are read live, so the panel says what GitHub says on the day it is built.
 
-GTOTAL, GSTART = 848, date(2025, 8, 31)
-WEEKS = [
-    "0000000", "0000000", "0000000", "0100000", "0000000", "0000001",
-    "0000000", "0110100", "0000000", "0000000", "0100010", "0000000",
-    "0000000", "0000000", "0000000", "0000000", "0000000", "0000000",
-    "0000000", "0000000", "0000000", "0010100", "1122101", "1101100",
-    "0111101", "0100000", "0001100", "0000000", "0000000", "1110111",
-    "0011111", "1210010", "1011101", "1210100", "0233400", "0000000",
-    "0011011", "1111101", "3111100", "0000000", "0001100", "0000000",
-    "0000000", "0000000", "0000000", "0000000", "0000000", "0000010",
-    "1100000", "0000000", "0000011", "0311100", "011123_",
-]
+GTOTAL, GSTART, WEEKS = contribution_year()
 
 GW, GH, GBAR = 900, 212, 28          # 900 / 212 = 4.25, near the golden ratio cubed
 LABEL, GPAD = 34, 34                 # weekday gutter, then the terminal's own padding
