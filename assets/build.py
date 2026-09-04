@@ -205,17 +205,49 @@ def terminal(p):
 # --------------------------------------------------------------------------
 # finder
 # --------------------------------------------------------------------------
+# finder
+# --------------------------------------------------------------------------
 
 FW, FH, FBAR, SIDE = 900, 344, 52, 180      # 900 / 344 = 2.6163, golden ratio squared
 ROW, HEADER, STATUS = 26, 25, 24
 
-SIDEBAR = ["AirDrop", "Recents", "Applications", "Desktop", "Documents", "projects"]
-FILES = [
-    ("convert.in", "TypeScript", "#3178c6", "1.3 MB", "Sep 3, 2026 at 00:28"),
-    ("qr.in", "HTML", "#e34c26", "229 KB", "Sep 4, 2026 at 07:49"),
-    ("snipsearch", "PowerShell", "#5391fe", "29 KB", "Sep 4, 2026 at 00:08"),
-    ("stelegraphy", "TypeScript", "#3178c6", "380 KB", "Sep 3, 2026 at 10:26"),
-]
+SIDEBAR = ["AirDrop", "Recents", "Applications", "Desktop", "Documents",
+           "projects", "focus", "toolbox"]
+
+# Two Finder column layouts. Sizes and dates in projects come from the GitHub
+# API; focus and toolbox use the Comments column instead of inventing any.
+FOLDERS = {
+    "projects": dict(
+        icon="folder", available="843.2 GB",
+        columns=[("Name", 14, "start"), ("Tags", 302, "start"),
+                 ("Size", 520, "end"), ("Date Modified", 544, "start")],
+        rules=[292, 432, 532],
+        rows=[("convert.in", ("TypeScript", "#3178c6"), "1.3 MB", "Sep 3, 2026 at 00:28"),
+              ("qr.in", ("HTML", "#e34c26"), "229 KB", "Sep 4, 2026 at 07:49"),
+              ("snipsearch", ("PowerShell", "#5391fe"), "29 KB", "Sep 4, 2026 at 00:08"),
+              ("stelegraphy", ("TypeScript", "#3178c6"), "380 KB", "Sep 3, 2026 at 10:26")]),
+    "focus": dict(
+        icon="doc", available="843.2 GB",
+        columns=[("Name", 14, "start"), ("Kind", 262, "start"), ("Comments", 402, "start")],
+        rules=[252, 392],
+        rows=[("authorization.md", "Bug class", "IDOR, tenant isolation, privilege boundaries"),
+              ("ssrf.md", "Bug class", "internal metadata, blind callbacks, filter bypass"),
+              ("exposed-config.md", "Bug class", "leaked env, build manifests, open storage"),
+              ("local-first.md", "Principle", "if it runs in the browser it needs no server"),
+              ("reporting.md", "Principle", "reproducible steps, demonstrated impact")]),
+    "toolbox": dict(
+        icon="app", available="843.2 GB",
+        columns=[("Name", 14, "start"), ("Kind", 262, "start"), ("Comments", 402, "start")],
+        rules=[252, 392],
+        rows=[("TypeScript", "Language", "apps and CLIs that share one core"),
+              ("Node", "Runtime", "build scripts and CLI entry points"),
+              ("PowerShell", "Shell", "Windows tooling, snipsearch"),
+              ("Python", "Language", "glue, generators, quick analysis"),
+              ("Burp Suite", "Proxy", "every request in an engagement"),
+              ("Docker", "Container", "reproducible test environments"),
+              ("Kubernetes", "Orchestrator", "lab clusters on MicroK8s"),
+              ("WSL", "Subsystem", "Linux tooling on a Windows machine")]),
+}
 
 
 def folder(x, y, s=16, tint="#4d9dfb"):
@@ -225,6 +257,20 @@ def folder(x, y, s=16, tint="#4d9dfb"):
             f'<path d="M0 3.5a2 2 0 0 1 2-2h4l1.6 1.6H14a2 2 0 0 1 2 2V13a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2Z" '
             f'fill="{tint}"/><path d="M0 6h16v7a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2Z" fill="{tint}" '
             f'fill-opacity="0.75"/></g>')
+
+
+def row_icon(kind, x, y, p):
+    """Folder, text document or app icon, each on a 16 unit grid."""
+    if kind == "folder":
+        return folder(x, y)
+    if kind == "doc":
+        return (f'<path d="M{x + 2} {y + 1}h7l4 4v10a1 1 0 0 1-1 1H{x + 2}a1 1 0 0 1-1-1V{y + 2}a1 1 0 0 1 1-1Z" '
+                f'fill="{p["body"]}" stroke="{p["dim"]}" stroke-width="1.1"/>'
+                f'<path d="M{x + 9} {y + 1}v4h4" fill="none" stroke="{p["dim"]}" stroke-width="1.1"/>'
+                + "".join(f'<path d="M{x + 4} {y + 7 + n * 2.6}h6.5" stroke="{p["dim"]}" stroke-width="1"/>'
+                          for n in range(3)))
+    return (f'<rect x="{x + 1}" y="{y + 1}" width="14" height="14" rx="3.6" fill="{p["sel"]}" fill-opacity="0.85"/>'
+            f'<circle cx="{x + 8}" cy="{y + 8}" r="2.6" fill="#ffffff"/>')
 
 
 def side_glyph(name, x, y, tint):
@@ -259,7 +305,8 @@ def toolbar_glyph(x, y, kind, tint):
             f'<path d="M{x + 5} {y + 12.5}h6" stroke="{tint}" stroke-width="1.5" stroke-linecap="round"/>')
 
 
-def finder(p):
+def finder(p, key):
+    spec = FOLDERS[key]
     head, tail = chrome(p, FW, FH, FBAR)
     ox = oy = MARGIN
     cx = ox + SIDE
@@ -270,42 +317,48 @@ def finder(p):
     body.append(f'<text class="s" x="{ox + 18}" y="{oy + FBAR + 24}" fill="{p["dim"]}">Favorites</text>')
     for n, item in enumerate(SIDEBAR):
         y = oy + FBAR + 34 + n * 28
-        on = item == "projects"
+        on = item == key
         if on:
             body.append(f'<rect x="{ox + 8}" y="{y}" width="{SIDE - 16}" height="24" rx="6" fill="{p["sel"]}"/>')
         tint = "#ffffff" if on else p["sel"]
         body.append(side_glyph(item, ox + 18, y + 4, tint))
         body.append(f'<text class="b" x="{ox + 42}" y="{y + 16}" fill="{"#ffffff" if on else p["text"]}">{item}</text>')
 
-    # column headers
+    # column headers, sorted by Name
     hy = oy + FBAR
     body.append(f'<rect x="{cx}" y="{hy}" width="{FW - SIDE}" height="{HEADER}" fill="{p["body"]}"/>')
-    for sx in (292, 432, 532):
+    for sx in spec["rules"]:
         body.append(f'<path d="M{cx + sx} {hy + 5}v{HEADER - 10}" stroke="{p["hair"]}" stroke-width="1"/>')
-    body.append(f'<text class="s" x="{cx + 14}" y="{hy + 17}" fill="{p["text"]}">Name</text>')
-    body.append(f'<path d="M{cx + 55} {hy + 14}l3.5-4 3.5 4" fill="none" stroke="{p["dim"]}" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>')
-    body.append(f'<text class="s" x="{cx + 302}" y="{hy + 17}" fill="{p["dim"]}">Tags</text>')
-    body.append(f'<text class="s" x="{cx + 520}" y="{hy + 17}" text-anchor="end" fill="{p["dim"]}">Size</text>')
-    body.append(f'<text class="s" x="{cx + 544}" y="{hy + 17}" fill="{p["dim"]}">Date Modified</text>')
+    for label, lx, anchor in spec["columns"]:
+        first = label == "Name"
+        body.append(f'<text class="s" x="{cx + lx}" y="{hy + 17}" text-anchor="{anchor}" '
+                    f'fill="{p["text"] if first else p["dim"]}">{label}</text>')
+        if first:
+            body.append(f'<path d="M{cx + lx + 41} {hy + 14}l3.5-4 3.5 4" fill="none" stroke="{p["dim"]}" '
+                        f'stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>')
     body.append(f'<path d="M{cx} {hy + HEADER}h{FW - SIDE}" stroke="{p["hair"]}" stroke-width="1"/>')
 
     # rows
-    for n, (name, tag, colour, size, date) in enumerate(FILES):
+    for n, cells in enumerate(spec["rows"]):
         y = hy + HEADER + n * ROW
         if n % 2:
             body.append(f'<rect x="{cx}" y="{y}" width="{FW - SIDE}" height="{ROW}" fill="{p["alt"]}"/>')
-        body.append(folder(cx + 14, y + 5))
-        body.append(f'<text class="b" x="{cx + 38}" y="{y + 17}" fill="{p["text"]}">{name}</text>')
-        body.append(f'<circle cx="{cx + 306}" cy="{y + 13}" r="4.5" fill="{colour}"/>')
-        body.append(f'<text class="b" x="{cx + 318}" y="{y + 17}" fill="{p["dim"]}">{tag}</text>')
-        body.append(f'<text class="b" x="{cx + 520}" y="{y + 17}" text-anchor="end" fill="{p["dim"]}">{size}</text>')
-        body.append(f'<text class="b" x="{cx + 544}" y="{y + 17}" fill="{p["dim"]}">{date}</text>')
+        body.append(row_icon(spec["icon"], cx + 14, y + 5, p))
+        body.append(f'<text class="b" x="{cx + 38}" y="{y + 17}" fill="{p["text"]}">{cells[0]}</text>')
+        for (label, lx, anchor), value in zip(spec["columns"][1:], cells[1:]):
+            if isinstance(value, tuple):      # a Finder tag: coloured dot plus name
+                body.append(f'<circle cx="{cx + lx + 4}" cy="{y + 13}" r="4.5" fill="{value[1]}"/>')
+                body.append(f'<text class="b" x="{cx + lx + 16}" y="{y + 17}" fill="{p["dim"]}">{value[0]}</text>')
+            else:
+                body.append(f'<text class="b" x="{cx + lx}" y="{y + 17}" text-anchor="{anchor}" '
+                            f'fill="{p["dim"]}">{html.escape(value)}</text>')
 
     # status bar
     sy = oy + FH - STATUS
     body.append(f'<rect x="{ox}" y="{sy}" width="{FW}" height="{STATUS}" fill="{p["bar"]}"/>')
     body.append(f'<path d="M{ox} {sy}h{FW}" stroke="{p["hair"]}" stroke-width="1"/>')
-    body.append(f'<text class="s" x="{ox + FW / 2}" y="{sy + 16}" text-anchor="middle" fill="{p["dim"]}">4 items, 843.2 GB available</text>')
+    body.append(f'<text class="s" x="{ox + FW / 2}" y="{sy + 16}" text-anchor="middle" fill="{p["dim"]}">'
+                f'{len(spec["rows"])} items, {spec["available"]} available</text>')
     body.append(f'<path d="M{cx} {oy + FBAR}v{FH - FBAR}" stroke="{p["hair"]}" stroke-width="1"/>')
     body.append(tail)
 
@@ -313,7 +366,7 @@ def finder(p):
     tb = [f'<path d="M{ox + 96} {oy + 20}l-5 6 5 6" fill="none" stroke="{p["dim"]}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>',
           f'<path d="M{ox + 122} {oy + 20}l5 6-5 6" fill="none" stroke="{p["dim"]}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>',
           folder(ox + FW / 2 - 48, oy + 18, 15),
-          f'<text class="t" x="{ox + FW / 2 - 26}" y="{oy + 31}" fill="{p["title"]}">projects</text>']
+          f'<text class="t" x="{ox + FW / 2 - 26}" y="{oy + 31}" fill="{p["title"]}">{key}</text>']
     vx = ox + FW - 232
     tb.append(f'<rect x="{vx}" y="{oy + 15}" width="88" height="23" rx="6" fill="{p["body"]}" fill-opacity="0.6" stroke="{p["hair"]}" stroke-width="1"/>')
     for n, kind in enumerate(("grid", "list", "columns", "gallery")):
@@ -328,9 +381,10 @@ def finder(p):
     tb.append(f'<path d="M{ox + FW - 94} {oy + 31}v-9m0-9 4 4m-4-4-4 4" fill="none" stroke="{p["dim"]}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" transform="translate(0,4)"/>')
     tb.append("".join(f'<circle cx="{ox + FW - 65 + n * 5}" cy="{oy + 26}" r="1.6" fill="{p["dim"]}"/>' for n in range(3)))
 
+    listing = "; ".join(", ".join(c[0] if isinstance(c, tuple) else c for c in row) for row in spec["rows"])
     return f'''<svg xmlns="http://www.w3.org/2000/svg" width="{FW + MARGIN * 2}" height="{FH + MARGIN * 2}" viewBox="0 0 {FW + MARGIN * 2} {FH + MARGIN * 2}" role="img" aria-labelledby="t d">
-<title id="t">The projects folder in Finder</title>
-<desc id="d">A macOS Finder window in list view showing four folders: convert.in, tagged TypeScript, 1.3 MB, modified Sep 3 2026; qr.in, tagged HTML, 229 KB, modified Sep 4 2026; snipsearch, tagged PowerShell, 29 KB, modified Sep 4 2026; and stelegraphy, tagged TypeScript, 380 KB, modified Sep 3 2026.</desc>
+<title id="t">The {key} folder in Finder</title>
+<desc id="d">A macOS Finder window in list view, with {key} selected in the sidebar. It lists: {html.escape(listing)}.</desc>
 <style>
 .t {{ {UI} font-size: 13px; font-weight: 600; }}
 .b {{ {UI} font-size: 13px; }}
@@ -340,7 +394,6 @@ def finder(p):
 {"".join(tb)}
 </svg>
 '''
-
 
 # --------------------------------------------------------------------------
 # dock icons
@@ -398,10 +451,13 @@ DOCK = [("convert", "convert.in"), ("qr", "qr.in"), ("snipsearch", "snipsearch")
 
 if __name__ == "__main__":
     for name, palette in THEMES:
-        for part, render in (("hero", terminal), ("finder", finder)):
-            path = f"assets/{part}-{name}.svg"
+        with open(f"assets/hero-{name}.svg", "w") as f:
+            f.write(terminal(palette))
+        print(f"assets/hero-{name}.svg")
+        for key in FOLDERS:
+            path = f"assets/finder-{key}-{name}.svg"
             with open(path, "w") as f:
-                f.write(render(palette))
+                f.write(finder(palette, key))
             print(path)
     for name, label in DOCK:
         path = f"assets/icon-{name}.svg"
