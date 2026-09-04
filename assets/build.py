@@ -3,7 +3,8 @@
 Three components share one palette and one window chrome:
 
   hero-<theme>.svg    an animated zsh session, 900x556  (1 : 1.618)
-  finder-<theme>.svg  the projects folder in list view, 900x344  (1 : 2.618)
+  finder-<theme>.svg  one Finder window cycling projects, focus and toolbox,
+                      900x344  (1 : 2.618)
   icon-<name>.svg     dock icons, 96pt squircles at Apple's 22.37% radius
 
 Window metrics follow macOS: 12pt traffic lights on 20pt centres, 28pt
@@ -340,8 +341,71 @@ def tool_glyph(p, kind, x, y):
             f'<path d="M{x + 11} {y + 11}l4 4" stroke="{c}" stroke-width="{sw}" stroke-linecap="round"/>')
 
 
-def finder(p, key):
+DWELL = 4.0                      # seconds each folder stays selected
+KEYS = list(FOLDERS)
+CYCLE = DWELL * len(KEYS)
+
+
+def show(i):
+    """Discrete opacity keyframes: pane i is visible only during its own slot."""
+    values = ";".join("1" if j == i else "0" for j in range(len(KEYS)))
+    times = ";".join(f"{j / len(KEYS):.4f}" for j in range(len(KEYS)))
+    return (f'<animate attributeName="opacity" calcMode="discrete" values="{values}" '
+            f'keyTimes="{times}" dur="{CYCLE}s" repeatCount="indefinite"/>')
+
+
+def cycled(parts, still_class=""):
+    """Wrap one fragment per folder so exactly one shows at a time."""
+    out = ['<g class="cycle">']
+    for i, part in enumerate(parts):
+        out.append(f'<g opacity="{1 if i == 0 else 0}">{part}{show(i)}</g>')
+    out.append(f'</g><g class="still{still_class}">{parts[0]}</g>')
+    return "".join(out)
+
+
+def pane(p, key):
+    """Sidebar selection, column headers and rows for one folder."""
     spec = FOLDERS[key]
+    ox = oy = MARGIN
+    cx = ox + SIDE
+    out = []
+
+    # the selection pill sits on top of the sidebar row it covers
+    sy = oy + FBAR + 28 + SIDEBAR.index(key) * 28
+    out.append(f'<rect x="{ox + 8}" y="{sy}" width="{SIDE - 16}" height="26" rx="8" fill="{p["sel"]}"/>')
+    out.append(side_glyph(key, ox + 18, sy + 5, "#ffffff"))
+    out.append(f'<text class="b" x="{ox + 42}" y="{sy + 17}" fill="#ffffff">{key}</text>')
+
+    # column headers, sorted by Name ascending
+    hy = oy + FBAR
+    for sx in spec["rules"]:
+        out.append(f'<path d="M{cx + sx} {hy + 6}v{HEADER - 12}" stroke="{p["hair"]}" stroke-width="1"/>')
+    for label, lx, anchor in spec["columns"]:
+        out.append(f'<text class="s" x="{cx + lx}" y="{hy + 17}" text-anchor="{anchor}" fill="{p["dim"]}">{label}</text>')
+    out.append(f'<path d="M{cx + spec["rules"][0] - 18} {hy + 14}l3.5-4 3.5 4" fill="none" stroke="{p["dim"]}" '
+               f'stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>')
+
+    for n, cells in enumerate(spec["rows"]):
+        y = hy + HEADER + n * ROW
+        if n % 2:
+            out.append(f'<rect x="{cx}" y="{y}" width="{FW - SIDE}" height="{ROW}" fill="{p["alt"]}"/>')
+        if spec["disclosure"]:
+            out.append(f'<path d="M{cx + 14} {y + 8}l4 4-4 4" fill="none" stroke="{p["dim"]}" stroke-width="1.5" '
+                       f'stroke-linecap="round" stroke-linejoin="round"/>')
+        out.append(row_icon(spec["icon"], cx + 26, y + 4, p))
+        out.append(f'<text class="b" x="{cx + 50}" y="{y + 16}" fill="{p["text"]}">{cells[0]}</text>')
+        for (label, lx, anchor), value in zip(spec["columns"][1:], cells[1:]):
+            if isinstance(value, tuple):      # a Finder tag: coloured dot plus name
+                out.append(f'<circle cx="{cx + lx + 4}" cy="{y + 12}" r="4.5" fill="{value[1]}"/>')
+                out.append(f'<text class="b" x="{cx + lx + 16}" y="{y + 16}" fill="{p["dim"]}">{value[0]}</text>')
+            else:
+                out.append(f'<text class="b" x="{cx + lx}" y="{y + 16}" text-anchor="{anchor}" '
+                           f'fill="{p["dim"]}">{html.escape(value)}</text>')
+    return "".join(out)
+
+
+def finder(p):
+    """One window whose selection walks the sidebar, a folder every DWELL seconds."""
     head, tail = chrome(p, FW, FH, FBAR, FRADIUS, SIDE)
     ox = oy = MARGIN
     cx = ox + SIDE
@@ -353,47 +417,17 @@ def finder(p, key):
     body.append(f'<text class="s" x="{ox + 18}" y="{oy + FBAR + 18}" fill="{p["head"]}">Favourites</text>')
     for n, item in enumerate(SIDEBAR):
         y = oy + FBAR + 28 + n * 28
-        on = item == key
-        if on:
-            body.append(f'<rect x="{ox + 8}" y="{y}" width="{SIDE - 16}" height="26" rx="8" fill="{p["sel"]}"/>')
-        tint = "#ffffff" if on else "#4d9dfb"
-        body.append(side_glyph(item, ox + 18, y + 5, tint))
-        body.append(f'<text class="b" x="{ox + 42}" y="{y + 17}" fill="{"#ffffff" if on else p["text"]}">{item}</text>')
-
-    # column headers, sorted by Name ascending
-    hy = oy + FBAR
-    for sx in spec["rules"]:
-        body.append(f'<path d="M{cx + sx} {hy + 6}v{HEADER - 12}" stroke="{p["hair"]}" stroke-width="1"/>')
-    for label, lx, anchor in spec["columns"]:
-        body.append(f'<text class="s" x="{cx + lx}" y="{hy + 17}" text-anchor="{anchor}" fill="{p["dim"]}">{label}</text>')
-    body.append(f'<path d="M{cx + spec["rules"][0] - 18} {hy + 14}l3.5-4 3.5 4" fill="none" stroke="{p["dim"]}" '
-                f'stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>')
-    body.append(f'<path d="M{cx} {hy + HEADER}h{FW - SIDE}" stroke="{p["hair"]}" stroke-width="1"/>')
-
-    # rows
-    for n, cells in enumerate(spec["rows"]):
-        y = hy + HEADER + n * ROW
-        if n % 2:
-            body.append(f'<rect x="{cx}" y="{y}" width="{FW - SIDE}" height="{ROW}" fill="{p["alt"]}"/>')
-        if spec["disclosure"]:
-            body.append(f'<path d="M{cx + 14} {y + 8}l4 4-4 4" fill="none" stroke="{p["dim"]}" stroke-width="1.5" '
-                        f'stroke-linecap="round" stroke-linejoin="round"/>')
-        body.append(row_icon(spec["icon"], cx + 26, y + 4, p))
-        body.append(f'<text class="b" x="{cx + 50}" y="{y + 16}" fill="{p["text"]}">{cells[0]}</text>')
-        for (label, lx, anchor), value in zip(spec["columns"][1:], cells[1:]):
-            if isinstance(value, tuple):      # a Finder tag: coloured dot plus name
-                body.append(f'<circle cx="{cx + lx + 4}" cy="{y + 12}" r="4.5" fill="{value[1]}"/>')
-                body.append(f'<text class="b" x="{cx + lx + 16}" y="{y + 16}" fill="{p["dim"]}">{value[0]}</text>')
-            else:
-                body.append(f'<text class="b" x="{cx + lx}" y="{y + 16}" text-anchor="{anchor}" '
-                            f'fill="{p["dim"]}">{html.escape(value)}</text>')
+        body.append(side_glyph(item, ox + 18, y + 5, "#4d9dfb"))
+        body.append(f'<text class="b" x="{ox + 42}" y="{y + 17}" fill="{p["text"]}">{item}</text>')
+    body.append(f'<path d="M{cx} {oy + FBAR + HEADER}h{FW - SIDE}" stroke="{p["hair"]}" stroke-width="1"/>')
+    body.append(cycled([pane(p, key) for key in KEYS]))
     body.append(tail)
 
     # toolbar, above the clip so the glyphs stay crisp
     tb = [capsule(p, cx + 12, oy + 12, 66),
           f'<path d="M{cx + 32} {oy + 20}l-5 6 5 6" fill="none" stroke="{p["glyph"]}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>',
           f'<path d="M{cx + 58} {oy + 20}l5 6-5 6" fill="none" stroke="{p["glyph"]}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>',
-          f'<text class="w" x="{cx + 96}" y="{oy + 32}" fill="{p["title"]}">{key}</text>']
+          cycled([f'<text class="w" x="{cx + 96}" y="{oy + 32}" fill="{p["title"]}">{key}</text>' for key in KEYS])]
     groups = [("list", "sort"), ("group",), ("share",), ("tag",), ("more",), ("search",)]
     gx = ox + FW - 20
     for names in reversed(groups):
@@ -404,19 +438,26 @@ def finder(p, key):
             tb.append(tool_glyph(p, name, gx + 7 + n * 30, oy + 18))
         gx -= 8
 
-    listing = "; ".join(", ".join(c[0] if isinstance(c, tuple) else c for c in row) for row in spec["rows"])
+    listing = ". ".join(
+        key + " holds " + ", ".join(row[0] for row in FOLDERS[key]["rows"]) for key in KEYS)
     return f'''<svg xmlns="http://www.w3.org/2000/svg" width="{FW + MARGIN * 2}" height="{FH + MARGIN * 2}" viewBox="0 0 {FW + MARGIN * 2} {FH + MARGIN * 2}" role="img" aria-labelledby="t d">
-<title id="t">The {key} folder in Finder</title>
-<desc id="d">A macOS Tahoe Finder window in list view, with {key} selected in the sidebar. It lists: {html.escape(listing)}.</desc>
+<title id="t">A Finder window walking through projects, focus and toolbox</title>
+<desc id="d">A macOS Tahoe Finder window in list view. The sidebar selection moves from projects to focus to toolbox every {DWELL:.0f} seconds and the listing follows it. {html.escape(listing)}.</desc>
 <style>
 .w {{ {UI} font-size: 15px; font-weight: 600; }}
 .b {{ {UI} font-size: 13px; }}
 .s {{ {UI} font-size: 11px; font-weight: 500; }}
+.still {{ display: none; }}
+@media (prefers-reduced-motion: reduce) {{
+  .cycle {{ display: none; }}
+  .still {{ display: inline; }}
+}}
 </style>
 {"".join(body)}
 {"".join(tb)}
 </svg>
 '''
+
 
 # --------------------------------------------------------------------------
 # dock icons
@@ -478,11 +519,10 @@ if __name__ == "__main__":
             f.write(terminal(palette))
         print(f"assets/hero-{name}.svg")
     for name, palette in FINDER_THEMES:
-        for key in FOLDERS:
-            path = f"assets/finder-{key}-{name}.svg"
-            with open(path, "w") as f:
-                f.write(finder(palette, key))
-            print(path)
+        path = f"assets/finder-{name}.svg"
+        with open(path, "w") as f:
+            f.write(finder(palette))
+        print(path)
     for name, label in DOCK:
         path = f"assets/icon-{name}.svg"
         with open(path, "w") as f:
