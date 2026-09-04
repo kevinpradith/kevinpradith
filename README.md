@@ -6,12 +6,6 @@
 </p>
 
 <p align="center">
-  <sub>I break web apps for a living and build small tools that never send your files anywhere.</sub>
-</p>
-
-<br>
-
-<p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/kevinpradith/kevinpradith/main/assets/finder-dark.svg?v=4">
     <img alt="A Finder window listing four project folders: convert.in, qr.in, snipsearch and stelegraphy." src="https://raw.githubusercontent.com/kevinpradith/kevinpradith/main/assets/finder-light.svg?v=4" width="880">
