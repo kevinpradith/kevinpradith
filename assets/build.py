@@ -235,6 +235,7 @@ def terminal(p):
 
 FW, FH, FBAR, SIDE = 900, 344, 52, 170      # 900 / 344 = 2.6163, golden ratio squared
 ROW, HEADER = 24, 24
+SPAD, SRADIUS = 10, 16                      # Tahoe floats the sidebar as a nested window
 
 SIDEBAR = ["AirDrop", "Recents", "Applications",
            "projects", "certifications", "awards"]
@@ -277,11 +278,11 @@ FOLDERS = {
               ("jhic-infra.pdf", "Semi-finalist", "Nov 2025", "Jagoan Hosting")]),
 }
 
-FINDER_LIGHT = dict(body="#ffffff", bar="#f0f0f2", alt="#f7f7f8", btn="#e4e4e7",
+FINDER_LIGHT = dict(body="#ffffff", bar="#f0f0f2", panel="#f6f6f8", alt="#f7f7f8", btn="#e4e4e7",
                     edge="#c9c9cd", hair="#dcdcde", title="#1d1d1f", text="#1d1d1f",
                     dim="#6e6e73", head="#8a8a8e", glyph="#3c3c3f", sel="#0a63fe",
                     shadow=0.22, rim=0.5)
-FINDER_DARK = dict(body="#1f1f21", bar="#2a2a2d", alt="#252528", btn="#3a3a3e",
+FINDER_DARK = dict(body="#1f1f21", bar="#2a2a2d", panel="#303033", alt="#252528", btn="#3a3a3e",
                    edge="#ffffff", hair="#3a3a3d", title="#f5f5f7", text="#f5f5f7",
                    dim="#98989d", head="#8e8e93", glyph="#d8d8dc", sel="#0a63fe",
                    shadow=0.55, rim=0.14)
@@ -439,9 +440,9 @@ def pane(p, key):
     spec = FOLDERS[key]
     ox = oy = MARGIN
     cx = ox + SIDE
-    sy = oy + FBAR + 28 + SIDEBAR.index(key) * 28
-    label = (side_glyph(key, ox + 18, sy + 5, "#ffffff")
-             + f'<text class="b" x="{ox + 42}" y="{sy + 17}" fill="#ffffff">{key}</text>')
+    sy = oy + FBAR + 32 + SIDEBAR.index(key) * 28
+    label = (side_glyph(key, ox + SPAD + 14, sy + 5, "#ffffff")
+             + f'<text class="b" x="{ox + SPAD + 38}" y="{sy + 17}" fill="#ffffff">{key}</text>')
 
     out = []
     hy = oy + FBAR
@@ -473,28 +474,32 @@ def pane(p, key):
 
 def finder(p):
     """One window whose selection walks the sidebar, a folder every DWELL seconds."""
-    head, tail = chrome(p, FW, FH, FBAR, FRADIUS, SIDE)
+    head, tail = chrome(p, FW, FH, FBAR, FRADIUS)   # the toolbar glass runs the full width
     ox = oy = MARGIN
     cx = ox + SIDE
     body = [head]
 
-    # one glass layer: the sidebar runs the full height, the toolbar continues it
-    body.append(f'<rect x="{ox}" y="{oy}" width="{SIDE}" height="{FH}" fill="{p["bar"]}"/>')
-    body.append(f'<path d="M{cx} {oy + FBAR}v{FH - FBAR}" stroke="{p["hair"]}" stroke-opacity="0.7" stroke-width="1"/>')
-    body.append(f'<text class="s" x="{ox + 18}" y="{oy + FBAR + 18}" fill="{p["head"]}">Favourites</text>')
+    # Tahoe floats the sidebar as a nested window inside the glass, so it is a
+    # rounded panel inset from the edges rather than a column flush to them
+    px, pw = ox + SPAD, SIDE - SPAD - 8
+    py, ph = oy + FBAR, FH - FBAR - SPAD
+    body.append(f'<rect x="{px}" y="{py}" width="{pw}" height="{ph}" rx="{SRADIUS}" fill="{p["panel"]}"/>')
+    body.append(f'<rect x="{px + 0.5}" y="{py + 0.5}" width="{pw - 1}" height="{ph - 1}" rx="{SRADIUS}" '
+                f'fill="none" stroke="{p["hair"]}" stroke-opacity="0.8" stroke-width="1"/>')
+    body.append(f'<text class="s" x="{px + 14}" y="{py + 22}" fill="{p["head"]}">Favourites</text>')
 
     def row_y(item):
-        return oy + FBAR + 28 + SIDEBAR.index(item) * 28
+        return py + 32 + SIDEBAR.index(item) * 28
 
     for item in SIDEBAR:
         y = row_y(item)
-        body.append(side_glyph(item, ox + 18, y + 5, "#4d9dfb"))
-        body.append(f'<text class="b" x="{ox + 42}" y="{y + 17}" fill="{p["text"]}">{item}</text>')
+        body.append(side_glyph(item, px + 14, y + 5, "#4d9dfb"))
+        body.append(f'<text class="b" x="{px + 38}" y="{y + 17}" fill="{p["text"]}">{item}</text>')
 
     # the selection is one pill that travels, rather than three that blink
-    body.append(f'<rect class="cycle" x="{ox + 8}" y="{row_y(KEYS[0])}" width="{SIDE - 16}" height="26" '
+    body.append(f'<rect class="cycle" x="{px + 6}" y="{row_y(KEYS[0])}" width="{pw - 12}" height="26" '
                 f'rx="13" fill="{p["sel"]}">{pill_track(row_y)}</rect>')
-    body.append(f'<rect class="still" x="{ox + 8}" y="{row_y(KEYS[0])}" width="{SIDE - 16}" height="26" '
+    body.append(f'<rect class="still" x="{px + 6}" y="{row_y(KEYS[0])}" width="{pw - 12}" height="26" '
                 f'rx="13" fill="{p["sel"]}"/>')
 
     body.append(f'<path d="M{cx} {oy + FBAR + HEADER}h{FW - SIDE}" stroke="{p["hair"]}" stroke-width="1"/>')
