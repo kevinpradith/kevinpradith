@@ -1,12 +1,21 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/kevinpradith/kevinpradith/main/assets/hero-dark.svg?v=3">
-    <img alt="Terminal typing out: kevin, security researcher and builder" src="https://raw.githubusercontent.com/kevinpradith/kevinpradith/main/assets/hero-light.svg?v=3" width="880">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/kevinpradith/kevinpradith/main/assets/hero-dark.svg?v=4">
+    <img alt="A terminal typing out a zsh session: kevin, security researcher and builder. Files stay on your machine, no upload, no telemetry, no build step." src="https://raw.githubusercontent.com/kevinpradith/kevinpradith/main/assets/hero-light.svg?v=4" width="880">
   </picture>
 </p>
 
 <p align="center">
   <sub>I break web apps for a living and build small tools that never send your files anywhere.</sub>
+</p>
+
+<br>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/kevinpradith/kevinpradith/main/assets/finder-dark.svg?v=4">
+    <img alt="A Finder window listing four project folders: convert.in, qr.in, snipsearch and stelegraphy." src="https://raw.githubusercontent.com/kevinpradith/kevinpradith/main/assets/finder-light.svg?v=4" width="880">
+  </picture>
 </p>
 
 <br>
@@ -46,16 +55,15 @@
 <br>
 </details>
 
-<details>
-<summary><b>&nbsp;&nbsp;Reach me</b></summary>
 <br>
 
-[kevinpradithh@gmail.com](mailto:kevinpradithh@gmail.com)
-
-<br>
-</details>
-
-<br>
+<p align="center">
+  <a href="https://github.com/kevinpradith/convert.in"><img src="https://raw.githubusercontent.com/kevinpradith/kevinpradith/main/assets/icon-convert.svg?v=4" width="104" alt="convert.in, PDF and image tools that never upload a file"></a>
+  <a href="https://github.com/kevinpradith/qr.in"><img src="https://raw.githubusercontent.com/kevinpradith/kevinpradith/main/assets/icon-qr.svg?v=4" width="104" alt="qr.in, a QR code generated in your browser"></a>
+  <a href="https://github.com/kevinpradith/snipsearch"><img src="https://raw.githubusercontent.com/kevinpradith/kevinpradith/main/assets/icon-snipsearch.svg?v=4" width="104" alt="snipsearch, Circle to Search for Windows 11"></a>
+  <a href="https://github.com/kevinpradith/stelegraphy"><img src="https://raw.githubusercontent.com/kevinpradith/kevinpradith/main/assets/icon-stelegraphy.svg?v=4" width="104" alt="stelegraphy, text into Elder Futhark runes and back"></a>
+  <a href="mailto:kevinpradithh@gmail.com"><img src="https://raw.githubusercontent.com/kevinpradith/kevinpradith/main/assets/icon-mail.svg?v=4" width="104" alt="Email kevinpradithh at gmail dot com"></a>
+</p>
 
 <p align="center">
   <sub>Everything here is MIT. Take it, fork it, ship it.</sub>

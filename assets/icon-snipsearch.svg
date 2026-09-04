@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="138" viewBox="0 0 120 138" role="img" aria-label="snipsearch">
+<defs>
+<linearGradient id="g" x1="0" y1="0" x2="0.35" y2="1">
+<stop offset="0" stop-color="#b07bff"/><stop offset="1" stop-color="#6e3bd8"/>
+</linearGradient>
+<filter id="sh" x="-30%" y="-30%" width="160%" height="160%">
+<feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#000000" flood-opacity="0.28"/>
+</filter>
+</defs>
+<style>.l { font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", Arial, sans-serif; font-size: 12px; }</style>
+<g filter="url(#sh)"><rect x="12" y="12" width="96" height="96" rx="21.5" fill="url(#g)"/></g>
+<g transform="translate(12,12)"><rect x="18" y="18" width="44" height="44" rx="8" fill="none" stroke="#fff" stroke-width="4.5" stroke-dasharray="9 7" stroke-linecap="round"/><circle cx="62" cy="62" r="13" fill="none" stroke="#fff" stroke-width="5.5"/><path d="M71.5 71.5 80 80" stroke="#fff" stroke-width="6.5" stroke-linecap="round"/></g>
+<text class="l" x="60.0" y="123" text-anchor="middle" fill="#8a8a8f">snipsearch</text>
+</svg>
