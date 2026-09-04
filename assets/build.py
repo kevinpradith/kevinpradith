@@ -91,6 +91,12 @@ def contribution_year():
 MARGIN, RADIUS, FRADIUS = 34, 16, 26   # Tahoe rounds hard, and rounds windows with a toolbar harder
 GAP = MARGIN * 2                       # the space between the two windows, 68, set here not in the README
 LIGHTS = [("#ed6a5f", "#e24b41"), ("#f6be50", "#e1a73e"), ("#61c555", "#2dac2f")]
+LIGHT_R, LIGHT_X, LIGHT_STEP = 7, 26, 24   # Tahoe grew the window controls and the gaps between them
+
+# The macOS built-in text styles, straight off the Human Interface Guidelines.
+# Headline is what a window title uses, Body a list row, Subheadline a column
+# header, Caption a toolbar label.
+HEADLINE, BODY, SUBHEAD, CAPTION = 13, 13, 11, 10
 
 LIGHT = dict(body="#ffffff", bar="#ececec", side="#f2f2f2", alt="#fafafa",
              edge="#c9c9c9", hair="#dcdcde", title="#1d1d1f", text="#1d1d1f",
@@ -106,6 +112,11 @@ MONO = ('font-family: "SF Mono", SFMono-Regular, ui-monospace, Menlo, Monaco, '
         '"Cascadia Mono", "DejaVu Sans Mono", "Liberation Mono", "Courier New", monospace;')
 
 
+def proxy(p, x, y, s=15):
+    """The proxy icon a document window carries to the left of its title."""
+    return folder(x, y, s, p["key"])
+
+
 def chrome(p, w, h, bar, radius=RADIUS, bar_x0=0):
     """Shadowed rounded window, clipped so the bar and sidebar keep the corners."""
     ox = oy = MARGIN
@@ -119,8 +130,9 @@ def chrome(p, w, h, bar, radius=RADIUS, bar_x0=0):
             f'</linearGradient></defs>'
             f'<g filter="url(#sh)"><rect x="{ox}" y="{oy}" width="{w}" height="{h}" rx="{radius}" fill="{p["body"]}"/></g>'
             f'<g clip-path="url(#win)"><rect x="{ox + bar_x0}" y="{oy}" width="{w - bar_x0}" height="{bar}" fill="{p["bar"]}"/>')
-    dots = "".join(f'<circle cx="{ox + 20 + n * 20}" cy="{oy + 26 if bar > 40 else oy + bar / 2}" r="6" '
-                   f'fill="{f}" stroke="{s}" stroke-width="0.5"/>' for n, (f, s) in enumerate(LIGHTS))
+    dots = "".join(f'<circle cx="{ox + LIGHT_X + n * LIGHT_STEP}" cy="{oy + 26 if bar > 40 else oy + bar / 2}" '
+                   f'r="{LIGHT_R}" fill="{f}" stroke="{s}" stroke-width="0.5"/>'
+                   for n, (f, s) in enumerate(LIGHTS))
     # the window rim, then the specular edge Liquid Glass carries, fading out of
     # the top corners rather than stopping dead at them
     tail = (f'</g>{dots}'
@@ -137,7 +149,9 @@ def chrome(p, w, h, bar, radius=RADIUS, bar_x0=0):
 
 TW, TH, TBAR = 900, 556, 28     # 900 / 556 = 1.6187
 PAD_X, PAD_TOP = 34, 21
-FS, LH, CW = 15, 24, 9.0        # 15 x 1.618 = 24 line height, 15 x 0.6 = 9 advance
+FS, LH, CW = 13, 20, 7.8        # SF Mono, near Terminal's own 12pt default, 0.6em advance
+COLS = int((TW - PAD_X * 2) // CW)
+ROWS = int((TH - TBAR - PAD_TOP * 2) // LH)
 CHAR_S, ENTER_S, OUT_S, BLANK_S = 0.075, 0.28, 0.26, 0.13
 START_S, HOLD_S, BLINK_S = 0.6, 4.8, 0.53
 PROMPT = "kevin@pradith ~ % "   # zsh with PROMPT='%n@%m %1~ %# '
@@ -207,7 +221,6 @@ def mono(x, y, text, fill):
 def terminal(p):
     lines, cycle, idle_at = schedule()
     head, tail = chrome(p, TW, TH, TBAR)
-    bar_line = f'<line x1="{MARGIN}" y1="{MARGIN + TBAR}" x2="{MARGIN + TW}" y2="{MARGIN + TBAR}" stroke="{p["hair"]}" stroke-width="1"/>'
     top = MARGIN + TBAR + PAD_TOP
     x, pw = MARGIN + PAD_X, len(PROMPT) * CW
     out, still, clips = [], [], []
@@ -258,12 +271,17 @@ def terminal(p):
               f'{anim("y", cur_y, cur_yt, cycle)}{anim("opacity", cur_o, cur_ot, cycle)}</rect>')
     still.append(f'<rect {box}/>')
 
+    # Terminal names a window after the folder, then the login, the working
+    # directory, the shell and the grid, joined with em dashes.
+    title = f"kevin \u2014 kevin@pradith \u2014 ~ \u2014 -zsh \u2014 {COLS}\u00d7{ROWS}"
+    title_w = len(title) * 6.4          # SF Pro Text at 13px, close enough to centre the icon
+
     return f'''<svg xmlns="http://www.w3.org/2000/svg" width="{TW + MARGIN * 2}" height="{TH + MARGIN * 2}" viewBox="0 0 {TW + MARGIN * 2} {TH + MARGIN * 2}" role="img" aria-labelledby="t d">
 <title id="t">kevin, security researcher and builder</title>
 <desc id="d">A macOS terminal window typing out a zsh session: whoami returns "kevin, security researcher and builder"; the principles are that files stay on your machine, with no upload, no telemetry and no build step, and that a report should be one a developer can act on rather than a severity number; the projects are convert.in, qr.in, snipsearch and stelegraphy; the security focus is authorization, SSRF and exposed configuration; the stack is typescript, node, powershell, python, burp, docker and k8s.</desc>
 <style>
 .m {{ {MONO} font-size: {FS}px; }}
-.u {{ {UI} font-size: 13px; font-weight: 600; }}
+.u {{ {UI} font-size: {HEADLINE}px; font-weight: 700; }}
 .still {{ display: none; }}
 @media (prefers-reduced-motion: reduce) {{
   .typed {{ display: none; }}
@@ -272,8 +290,8 @@ def terminal(p):
 </style>
 <defs>{"".join(clips)}</defs>
 {head}
-{bar_line}
-<text class="u" x="{MARGIN + TW / 2}" y="{MARGIN + 19}" text-anchor="middle" fill="{p["title"]}">kevin@pradith · zsh · 90×20</text>
+{proxy(p, MARGIN + TW / 2 - title_w / 2 - 21, MARGIN + 7)}
+<text class="u" x="{MARGIN + TW / 2 + 10}" y="{MARGIN + 19}" text-anchor="middle" fill="{p["title"]}">{title}</text>
 <g class="typed">
 {chr(10).join(out)}
 {cursor}
@@ -299,9 +317,9 @@ def terminal(p):
 # rather than appearing on hover, and inner radii are concentric with the
 # window, so the capsules and the selection pills stay in the same family.
 
-FW, FH, FBAR, SIDE = 900, 344, 52, 170      # 900 / 344 = 2.6163, golden ratio squared
+FW, FH, FBAR, SIDE = 900, 344, 68, 180      # 900 / 344 = 2.6163, golden ratio squared
 ROW, HEADER = 24, 24
-SPAD, SRADIUS = 10, 16                      # Tahoe floats the sidebar as a nested window
+STRIPE = 8                                  # a list row is a capsule inset from both edges
 
 SIDEBAR = ["AirDrop", "Recents", "Applications",
            "projects", "certifications", "awards"]
@@ -389,7 +407,10 @@ def side_glyph(name, x, y, tint):
         "Documents": f'<path d="M{x + 3} {y + 1.5}h6l4 4v9a1.5 1.5 0 0 1-1.5 1.5h-8.5A1.5 1.5 0 0 1 {x + 1.5} {y + 14.5}v-11.5A1.5 1.5 0 0 1 {x + 3} {y + 1.5}Z" '
                      f'fill="none" stroke="{tint}" stroke-width="1.5"/>',
     }
-    return g.get(name, folder(x, y + 1, 15, tint))
+    return g.get(name, f'<path d="M{x + 1} {y + 4.5}h4.6l1.7 2H{x + 15}a1.5 1.5 0 0 1 1.5 1.5v6.5'
+                        f'a1.5 1.5 0 0 1-1.5 1.5H{x + 1}a1.5 1.5 0 0 1-1.5-1.5V{y + 6}'
+                        f'a1.5 1.5 0 0 1 1.5-1.5Z" fill="none" stroke="{tint}" stroke-width="1.5" '
+                        f'stroke-linejoin="round"/>')
 
 
 def capsule(p, x, y, w, h=28, r=None):
@@ -418,6 +439,16 @@ def tool_glyph(p, kind, x, y):
     if kind == "tag":
         return (f'<path d="M{x + 1.5} {y + 2.5}h6.5l6.5 6.5-6.5 6-6.5-6.5Z" fill="none" stroke="{c}" stroke-width="{sw}" stroke-linejoin="round"/>'
                 f'<circle cx="{x + 5}" cy="{y + 6}" r="1.4" fill="{c}"/>')
+    if kind == "icons":
+        return "".join(f'<rect x="{x + 1 + col * 7}" y="{y + 1 + row * 7}" width="5.5" height="5.5" rx="1.6" '
+                       f'fill="{c}"/>' for row in range(2) for col in range(2))
+    if kind == "columns":
+        return "".join(f'<rect x="{x + 1 + n * 5}" y="{y + 1}" width="3.4" height="13" rx="1.2" fill="{c}"/>'
+                       for n in range(3))
+    if kind == "gallery":
+        return (f'<rect x="{x + 1}" y="{y + 1}" width="14" height="9" rx="1.8" fill="{c}"/>'
+                + "".join(f'<rect x="{x + 1 + n * 5}" y="{y + 12}" width="3.4" height="3" rx="1" fill="{c}"/>'
+                          for n in range(3)))
     if kind == "more":
         return ("".join(f'<circle cx="{x + 2 + n * 5}" cy="{y + 8}" r="1.5" fill="{c}"/>' for n in range(3))
                 + f'<circle cx="{x + 7} " cy="{y + 8}" r="8" fill="none" stroke="{c}" stroke-width="1.3" stroke-opacity="0.7"/>')
@@ -503,23 +534,26 @@ def pane(p, key):
     spec = FOLDERS[key]
     ox = oy = MARGIN
     cx = ox + SIDE
-    sy = oy + FBAR + 32 + SIDEBAR.index(key) * 28
-    label = (side_glyph(key, ox + SPAD + 14, sy + 5, "#ffffff")
-             + f'<text class="b" x="{ox + SPAD + 38}" y="{sy + 17}" fill="#ffffff">{key}</text>')
+    sy = oy + FBAR + 16 + SIDEBAR.index(key) * 28
+    label = (side_glyph(key, ox + 20, sy + 5, "#ffffff")
+             + f'<text class="b" x="{ox + 46}" y="{sy + 17}" fill="#ffffff">{key}</text>')
 
     out = []
     hy = oy + FBAR
     for sx in spec["rules"]:
         out.append(f'<path d="M{cx + sx} {hy + 6}v{HEADER - 12}" stroke="{p["hair"]}" stroke-width="1"/>')
-    for lbl, lx, anchor in spec["columns"]:
-        out.append(f'<text class="s" x="{cx + lx}" y="{hy + 17}" text-anchor="{anchor}" fill="{p["dim"]}">{lbl}</text>')
+    for n, (lbl, lx, anchor) in enumerate(spec["columns"]):
+        weight = ' font-weight="700"' if n == 0 else ''
+        out.append(f'<text class="s" x="{cx + lx}" y="{hy + 17}" text-anchor="{anchor}"{weight} '
+                   f'fill="{p["dim"]}">{lbl}</text>')
     out.append(f'<path d="M{cx + spec["rules"][0] - 18} {hy + 14}l3.5-4 3.5 4" fill="none" stroke="{p["dim"]}" '
                f'stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>')
 
     for n, cells in enumerate(spec["rows"]):
         y = hy + HEADER + n * ROW
         if n % 2:
-            out.append(f'<rect x="{cx}" y="{y}" width="{FW - SIDE}" height="{ROW}" fill="{p["alt"]}"/>')
+            out.append(f'<rect x="{cx + STRIPE}" y="{y}" width="{FW - SIDE - STRIPE * 2}" '
+                       f'height="{ROW}" rx="6" fill="{p["alt"]}"/>')
         if spec["disclosure"]:
             out.append(f'<path d="M{cx + 14} {y + 8}l4 4-4 4" fill="none" stroke="{p["dim"]}" stroke-width="1.5" '
                        f'stroke-linecap="round" stroke-linejoin="round"/>')
@@ -537,33 +571,31 @@ def pane(p, key):
 
 def finder(p):
     """One window whose selection walks the sidebar, a folder every DWELL seconds."""
-    head, tail = chrome(p, FW, FH, FBAR, FRADIUS)   # the toolbar glass runs the full width
     ox = oy = MARGIN
     cx = ox + SIDE
+    # The sidebar runs edge to edge, corner to corner, and the toolbar glass
+    # covers only the content half, so the window controls sit on the sidebar.
+    head, tail = chrome(p, FW, FH, FBAR, FRADIUS, bar_x0=SIDE)
     body = [head]
+    body.append(f'<rect x="{ox}" y="{oy}" width="{SIDE}" height="{FH}" fill="{p["panel"]}"/>')
+    body.append(f'<path d="M{cx + 0.5} {oy}v{FH}" stroke="{p["hair"]}" stroke-width="1"/>')
 
-    # Tahoe floats the sidebar as a nested window inside the glass, so it is a
-    # rounded panel inset from the edges rather than a column flush to them
-    px, pw = ox + SPAD, SIDE - SPAD - 8
-    py, ph = oy + FBAR, FH - FBAR - SPAD
-    body.append(f'<rect x="{px}" y="{py}" width="{pw}" height="{ph}" rx="{SRADIUS}" fill="{p["panel"]}"/>')
-    body.append(f'<rect x="{px + 0.5}" y="{py + 0.5}" width="{pw - 1}" height="{ph - 1}" rx="{SRADIUS}" '
-                f'fill="none" stroke="{p["hair"]}" stroke-opacity="0.8" stroke-width="1"/>')
-    body.append(f'<text class="s" x="{px + 14}" y="{py + 22}" fill="{p["head"]}">Favourites</text>')
+    py = oy + FBAR
+    body.append(f'<text class="s" x="{ox + 20}" y="{py + 6}" fill="{p["head"]}">Favourites</text>')
 
     def row_y(item):
-        return py + 32 + SIDEBAR.index(item) * 28
+        return py + 16 + SIDEBAR.index(item) * 28
+
+    # the selection is one pill that travels, rather than six that blink
+    pill = (f'x="{ox + 8}" y="{row_y(KEYS[0])}" width="{SIDE - 16}" height="26" '
+            f'rx="8" fill="{p["sel"]}"')
+    body.append(f'<rect class="cycle" {pill}>{pill_track(row_y)}</rect>')
+    body.append(f'<rect class="still" {pill}/>')
 
     for item in SIDEBAR:
         y = row_y(item)
-        body.append(side_glyph(item, px + 14, y + 5, "#4d9dfb"))
-        body.append(f'<text class="b" x="{px + 38}" y="{y + 17}" fill="{p["text"]}">{item}</text>')
-
-    # the selection is one pill that travels, rather than three that blink
-    body.append(f'<rect class="cycle" x="{px + 6}" y="{row_y(KEYS[0])}" width="{pw - 12}" height="26" '
-                f'rx="13" fill="{p["sel"]}">{pill_track(row_y)}</rect>')
-    body.append(f'<rect class="still" x="{px + 6}" y="{row_y(KEYS[0])}" width="{pw - 12}" height="26" '
-                f'rx="13" fill="{p["sel"]}"/>')
+        body.append(side_glyph(item, ox + 20, y + 5, p["glyph"]))
+        body.append(f'<text class="b" x="{ox + 46}" y="{y + 17}" fill="{p["text"]}">{item}</text>')
 
     body.append(f'<path d="M{cx} {oy + FBAR + HEADER}h{FW - SIDE}" stroke="{p["hair"]}" stroke-width="1"/>')
     panes = [pane(p, key) for key in KEYS]
@@ -571,19 +603,31 @@ def finder(p):
     body.append(cycled([listing for _, listing in panes], settle))
     body.append(tail)
 
-    # toolbar, above the clip so the glyphs stay crisp
-    tb = [capsule(p, cx + 12, oy + 12, 66),
-          f'<path d="M{cx + 32} {oy + 20}l-5 6 5 6" fill="none" stroke="{p["glyph"]}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>',
-          f'<path d="M{cx + 58} {oy + 20}l5 6-5 6" fill="none" stroke="{p["glyph"]}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>',
-          cycled([f'<text class="w" x="{cx + 96}" y="{oy + 32}" fill="{p["title"]}">{key}</text>' for key in KEYS])]
-    groups = [("list", "sort"), ("group",), ("share",), ("tag",), ("more",), ("search",)]
-    gx = ox + FW - 14
-    for names in reversed(groups):
+    # toolbar, above the clip so the glyphs stay crisp. Tahoe keeps the button
+    # groups on permanent glass and writes the group name underneath.
+    gy, cap_y = oy + 12, oy + 58
+    tb = [capsule(p, cx + 12, gy, 66, 30),
+          f'<path d="M{cx + 33} {gy + 9}l-5 6 5 6" fill="none" stroke="{p["glyph"]}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>',
+          f'<path d="M{cx + 45.5} {gy + 6}v18" stroke="{p["hair"]}" stroke-width="1"/>',
+          f'<path d="M{cx + 58} {gy + 9}l5 6-5 6" fill="none" stroke="{p["glyph"]}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>',
+          f'<text class="c" x="{cx + 45}" y="{cap_y}" text-anchor="middle" fill="{p["dim"]}">Back/Forward</text>',
+          cycled([f'<text class="w" x="{cx + 132}" y="{gy + 20}" fill="{p["title"]}">{key}</text>' for key in KEYS])]
+
+    # the view switcher carries four modes on one piece of glass, list selected
+    groups = [(("icons", "list", "columns", "gallery"), "View"), (("group",), "Group"),
+              (("share",), "Share"), (("tag",), "Edit Tags"), (("more",), "Action"),
+              (("search",), "Search")]
+    gx = ox + FW - 16
+    for names, caption in reversed(groups):
         w = 30 * len(names) + 14
         gx -= w
-        tb.append(capsule(p, gx, oy + 12, w))
+        tb.append(capsule(p, gx, gy, w, 30))
         for n, name in enumerate(names):
-            tb.append(tool_glyph(p, name, gx + 7 + n * 30, oy + 18))
+            if name == "list":
+                tb.append(f'<rect x="{gx + 7 + n * 30 - 3}" y="{gy + 3}" width="28" height="24" rx="7" '
+                          f'fill="{p["body"]}" fill-opacity="0.9"/>')
+            tb.append(tool_glyph(p, name, gx + 7 + n * 30, gy + 7))
+        tb.append(f'<text class="c" x="{gx + w / 2}" y="{cap_y}" text-anchor="middle" fill="{p["dim"]}">{caption}</text>')
         gx -= 8
 
     listing = ". ".join(
@@ -592,9 +636,10 @@ def finder(p):
 <title id="t">A Finder window walking through {", ".join(KEYS[:-1])} and {KEYS[-1]}</title>
 <desc id="d">A macOS Tahoe Finder window in list view. The sidebar selection slides from one folder to the next every {DWELL:.0f} seconds and the listing cross dissolves with it. {html.escape(listing)}.</desc>
 <style>
-.w {{ {UI} font-size: 13px; font-weight: 600; }}
-.b {{ {UI} font-size: 13px; }}
-.s {{ {UI} font-size: 11px; font-weight: 500; }}
+.w {{ {UI} font-size: {HEADLINE}px; font-weight: 700; }}
+.b {{ {UI} font-size: {BODY}px; }}
+.s {{ {UI} font-size: {SUBHEAD}px; font-weight: 500; }}
+.c {{ {UI} font-size: {CAPTION}px; }}
 .still {{ display: none; }}
 @media (prefers-reduced-motion: reduce) {{
   .cycle {{ display: none; }}
@@ -702,7 +747,7 @@ def graph(p, g):
 </linearGradient>
 </defs>
 <style>
-.u {{ {UI} font-size: 13px; font-weight: 600; }}
+.u {{ {UI} font-size: {HEADLINE}px; font-weight: 700; }}
 .g {{ {UI} font-size: 11px; }}
 .still {{ display: none; }}
 @media (prefers-reduced-motion: reduce) {{
