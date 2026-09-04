@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/kevinpradith/kevinpradith/main/assets/hero-dark.svg?v=2">
-    <img alt="Terminal typing out: kevin, security researcher and builder" src="https://raw.githubusercontent.com/kevinpradith/kevinpradith/main/assets/hero-light.svg?v=2" width="880">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/kevinpradith/kevinpradith/main/assets/hero-dark.svg?v=3">
+    <img alt="Terminal typing out: kevin, security researcher and builder" src="https://raw.githubusercontent.com/kevinpradith/kevinpradith/main/assets/hero-light.svg?v=3" width="880">
   </picture>
 </p>
 
