@@ -46,16 +46,22 @@ def chrome(p, w, h, bar, radius=RADIUS, bar_x0=0):
     head = (f'<defs><clipPath id="win"><rect x="{ox}" y="{oy}" width="{w}" height="{h}" rx="{radius}"/></clipPath>'
             f'<filter id="sh" x="-30%" y="-30%" width="160%" height="160%">'
             f'<feDropShadow dx="0" dy="9" stdDeviation="13" flood-color="#000000" flood-opacity="{p["shadow"]}"/>'
-            f'</filter></defs>'
+            f'</filter>'
+            f'<linearGradient id="spec" x1="0" y1="{oy}" x2="0" y2="{oy + 40}" gradientUnits="userSpaceOnUse">'
+            f'<stop offset="0" stop-color="#ffffff" stop-opacity="0.16"/>'
+            f'<stop offset="1" stop-color="#ffffff" stop-opacity="0"/>'
+            f'</linearGradient></defs>'
             f'<g filter="url(#sh)"><rect x="{ox}" y="{oy}" width="{w}" height="{h}" rx="{radius}" fill="{p["body"]}"/></g>'
             f'<g clip-path="url(#win)"><rect x="{ox + bar_x0}" y="{oy}" width="{w - bar_x0}" height="{bar}" fill="{p["bar"]}"/>')
     dots = "".join(f'<circle cx="{ox + 20 + n * 20}" cy="{oy + 26 if bar > 40 else oy + bar / 2}" r="6" '
                    f'fill="{f}" stroke="{s}" stroke-width="0.5"/>' for n, (f, s) in enumerate(LIGHTS))
-    # Liquid Glass catches the light along its top edge, then the window rim
+    # the window rim, then the specular edge Liquid Glass carries, fading out of
+    # the top corners rather than stopping dead at them
     tail = (f'</g>{dots}'
-            f'<path d="M{ox + radius} {oy + 0.75}h{w - radius * 2}" stroke="#ffffff" stroke-opacity="0.35" stroke-width="1.5"/>'
             f'<rect x="{ox + 0.5}" y="{oy + 0.5}" width="{w - 1}" height="{h - 1}" rx="{radius}" '
-            f'fill="none" stroke="{p["edge"]}" stroke-opacity="{p["rim"]}" stroke-width="1"/>')
+            f'fill="none" stroke="{p["edge"]}" stroke-opacity="{p["rim"]}" stroke-width="1"/>'
+            f'<rect x="{ox + 0.5}" y="{oy + 0.5}" width="{w - 1}" height="{h - 1}" rx="{radius}" '
+            f'fill="none" stroke="url(#spec)" stroke-width="1"/>')
     return head, tail
 
 
