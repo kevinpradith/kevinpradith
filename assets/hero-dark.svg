@@ -1,22 +1,40 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="800" height="290" viewBox="0 0 800 290" role="img" aria-label="Terminal window: kevin, security researcher and builder">
-  <style>
-    .t { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; font-size: 15px; }
-    .ui { font-family: ui-sans-serif, -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif; font-size: 13px; }
-  </style>
-  <rect x="0.5" y="0.5" width="799" height="289" rx="12" fill="#161617" stroke="#2f2f31"/>
-  <path d="M0.5 12.5A12 12 0 0 1 12.5 0.5h775A12 12 0 0 1 799.5 12.5V40.5H0.5Z" fill="#202022" stroke="#2f2f31"/>
-  <circle cx="24" cy="20" r="6" fill="#ff5f57"/>
-  <circle cx="44" cy="20" r="6" fill="#febc2e"/>
-  <circle cx="64" cy="20" r="6" fill="#28c840"/>
-  <text class="ui" x="400" y="25" text-anchor="middle" fill="#6e6e73">kevin — zsh — 80×24</text>
-
-  <text class="t" x="28" y="84" fill="#f5f5f7"><tspan fill="#6e6e73">$</tspan> whoami</text>
-  <text class="t" x="28" y="112" fill="#a1a1a6">kevin, security researcher and builder</text>
-
-  <text class="t" x="28" y="150" fill="#f5f5f7"><tspan fill="#6e6e73">$</tspan> cat ~/.principles</text>
-  <text class="t" x="28" y="178" fill="#a1a1a6">files stay on your machine. no upload, no telemetry, no build step.</text>
-
-  <text class="t" x="28" y="216" fill="#f5f5f7"><tspan fill="#6e6e73">$</tspan> ls ~/projects</text>
-  <text class="t" x="28" y="244" fill="#0a84ff">convert.in  qr.in  snipsearch  stelegraphy</text>
-  <rect x="28" y="262" width="9" height="18" rx="1" fill="#0a84ff" opacity="0.85"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="948" height="604" viewBox="0 0 948 604" role="img" aria-label="Terminal window typing out: kevin, security researcher and builder. Projects: convert.in, qr.in, snipsearch, stelegraphy.">
+<style>
+.m { font-family: "SF Mono", SFMono-Regular, ui-monospace, Menlo, Monaco, Consolas, "DejaVu Sans Mono", monospace; font-size: 15px; }
+.u { font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", Arial, sans-serif; font-size: 13px; font-weight: 600; }
+</style>
+<defs>
+<filter id="sh" x="-30%" y="-30%" width="160%" height="160%">
+<feDropShadow dx="0" dy="9" stdDeviation="13" flood-color="#000000" flood-opacity="0.55"/>
+</filter>
+<clipPath id="c2"><rect x="260.0" y="120" height="24" width="0"><animate attributeName="width" calcMode="discrete" values="0;9.0;18.0;27.0;36.0;45.0;54.0" keyTimes="0.00000;0.07375;0.07895;0.08414;0.08934;0.09453;0.09972" dur="14.439999999999998s" repeatCount="indefinite"/></rect></clipPath><clipPath id="c5"><rect x="260.0" y="192" height="24" width="0"><animate attributeName="width" calcMode="discrete" values="0;9.0;18.0;27.0;36.0;45.0;54.0;63.0;72.0;81.0;90.0;99.0;108.0;117.0;126.0;135.0" keyTimes="0.00000;0.15132;0.15651;0.16170;0.16690;0.17209;0.17729;0.18248;0.18767;0.19287;0.19806;0.20325;0.20845;0.21364;0.21884;0.22403" dur="14.439999999999998s" repeatCount="indefinite"/></rect></clipPath><clipPath id="c10"><rect x="260.0" y="312" height="24" width="0"><animate attributeName="width" calcMode="discrete" values="0;9.0;18.0;27.0;36.0;45.0;54.0;63.0;72.0;81.0;90.0;99.0;108.0;117.0" keyTimes="0.00000;0.31163;0.31683;0.32202;0.32722;0.33241;0.33760;0.34280;0.34799;0.35319;0.35838;0.36357;0.36877;0.37396" dur="14.439999999999998s" repeatCount="indefinite"/></rect></clipPath><clipPath id="c13"><rect x="260.0" y="384" height="24" width="0"><animate attributeName="width" calcMode="discrete" values="0;9.0;18.0;27.0;36.0;45.0;54.0;63.0;72.0;81.0;90.0;99.0;108.0;117.0;126.0;135.0;144.0" keyTimes="0.00000;0.42555;0.43075;0.43594;0.44114;0.44633;0.45152;0.45672;0.46191;0.46711;0.47230;0.47749;0.48269;0.48788;0.49307;0.49827;0.50346" dur="14.439999999999998s" repeatCount="indefinite"/></rect></clipPath><clipPath id="c16"><rect x="260.0" y="456" height="24" width="0"><animate attributeName="width" calcMode="discrete" values="0;9.0;18.0;27.0;36.0;45.0;54.0;63.0;72.0;81.0;90.0" keyTimes="0.00000;0.55506;0.56025;0.56544;0.57064;0.57583;0.58102;0.58622;0.59141;0.59661;0.60180" dur="14.439999999999998s" repeatCount="indefinite"/></rect></clipPath>
+</defs>
+<g filter="url(#sh)">
+<rect x="24" y="24" width="900" height="556" rx="10" fill="#1e1e1e"/>
+</g>
+<path d="M24 34A10 10 0 0 1 34 24H914A10 10 0 0 1 924 34V52H24Z" fill="#333336"/>
+<line x1="24" y1="52" x2="924" y2="52" stroke="#000000" stroke-width="1"/>
+<circle cx="44" cy="38.0" r="6" fill="#ed6a5f" stroke="#e24b41" stroke-width="0.5"/><circle cx="64" cy="38.0" r="6" fill="#f6be50" stroke="#e1a73e" stroke-width="0.5"/><circle cx="84" cy="38.0" r="6" fill="#61c555" stroke="#2dac2f" stroke-width="0.5"/>
+<text class="u" x="474.0" y="43" text-anchor="middle" fill="#d8d8da">kevin · zsh · 90×20</text>
+<g opacity="0"><text x="62" y="89" class="m" fill="#8a8a8f" textLength="378.0" lengthAdjust="spacing">Last login: Fri Sep  4 09:41:12 on ttys001</text><animate attributeName="opacity" calcMode="discrete" values="0;1" keyTimes="0.00000;0.04155" dur="14.439999999999998s" repeatCount="indefinite"/></g>
+<g opacity="0"><text x="62" y="137" class="m" fill="#8a8a8f" xml:space="preserve" textLength="198.0" lengthAdjust="spacing">kevin@MacBook-Pro ~ % </text><animate attributeName="opacity" calcMode="discrete" values="0;1" keyTimes="0.00000;0.06856" dur="14.439999999999998s" repeatCount="indefinite"/></g>
+<g clip-path="url(#c2)"><text x="260.0" y="137" class="m" fill="#f2f2f2" textLength="54.0" lengthAdjust="spacing">whoami</text></g>
+<g opacity="0"><text x="62" y="161" class="m" fill="#f2f2f2" textLength="342.0" lengthAdjust="spacing">kevin, security researcher and builder</text><animate attributeName="opacity" calcMode="discrete" values="0;1" keyTimes="0.00000;0.11911" dur="14.439999999999998s" repeatCount="indefinite"/></g>
+<g opacity="0"><text x="62" y="209" class="m" fill="#8a8a8f" xml:space="preserve" textLength="198.0" lengthAdjust="spacing">kevin@MacBook-Pro ~ % </text><animate attributeName="opacity" calcMode="discrete" values="0;1" keyTimes="0.00000;0.14612" dur="14.439999999999998s" repeatCount="indefinite"/></g>
+<g clip-path="url(#c5)"><text x="260.0" y="209" class="m" fill="#f2f2f2" textLength="135.0" lengthAdjust="spacing">cat .principles</text></g>
+<g opacity="0"><text x="62" y="233" class="m" fill="#f2f2f2" textLength="243.0" lengthAdjust="spacing">files stay on your machine.</text><animate attributeName="opacity" calcMode="discrete" values="0;1" keyTimes="0.00000;0.24342" dur="14.439999999999998s" repeatCount="indefinite"/></g>
+<g opacity="0"><text x="62" y="257" class="m" fill="#f2f2f2" textLength="351.0" lengthAdjust="spacing">no upload, no telemetry, no build step.</text><animate attributeName="opacity" calcMode="discrete" values="0;1" keyTimes="0.00000;0.26143" dur="14.439999999999998s" repeatCount="indefinite"/></g>
+<g opacity="0"><text x="62" y="281" class="m" fill="#f2f2f2" textLength="495.0" lengthAdjust="spacing">a report a developer can act on, not a severity number.</text><animate attributeName="opacity" calcMode="discrete" values="0;1" keyTimes="0.00000;0.27943" dur="14.439999999999998s" repeatCount="indefinite"/></g>
+<g opacity="0"><text x="62" y="329" class="m" fill="#8a8a8f" xml:space="preserve" textLength="198.0" lengthAdjust="spacing">kevin@MacBook-Pro ~ % </text><animate attributeName="opacity" calcMode="discrete" values="0;1" keyTimes="0.00000;0.30644" dur="14.439999999999998s" repeatCount="indefinite"/></g>
+<g clip-path="url(#c10)"><text x="260.0" y="329" class="m" fill="#f2f2f2" textLength="117.0" lengthAdjust="spacing">ls ~/projects</text></g>
+<g opacity="0"><text x="62" y="353" class="m" fill="#4aa8ff" textLength="432.0" lengthAdjust="spacing">convert.in    qr.in    snipsearch    stelegraphy</text><animate attributeName="opacity" calcMode="discrete" values="0;1" keyTimes="0.00000;0.39335" dur="14.439999999999998s" repeatCount="indefinite"/></g>
+<g opacity="0"><text x="62" y="401" class="m" fill="#8a8a8f" xml:space="preserve" textLength="198.0" lengthAdjust="spacing">kevin@MacBook-Pro ~ % </text><animate attributeName="opacity" calcMode="discrete" values="0;1" keyTimes="0.00000;0.42036" dur="14.439999999999998s" repeatCount="indefinite"/></g>
+<g clip-path="url(#c13)"><text x="260.0" y="401" class="m" fill="#f2f2f2" textLength="144.0" lengthAdjust="spacing">security --focus</text></g>
+<g opacity="0"><text x="62" y="425" class="m" fill="#f2f2f2" textLength="387.0" lengthAdjust="spacing">authorization, SSRF, exposed configuration.</text><animate attributeName="opacity" calcMode="discrete" values="0;1" keyTimes="0.00000;0.52285" dur="14.439999999999998s" repeatCount="indefinite"/></g>
+<g opacity="0"><text x="62" y="473" class="m" fill="#8a8a8f" xml:space="preserve" textLength="198.0" lengthAdjust="spacing">kevin@MacBook-Pro ~ % </text><animate attributeName="opacity" calcMode="discrete" values="0;1" keyTimes="0.00000;0.54986" dur="14.439999999999998s" repeatCount="indefinite"/></g>
+<g clip-path="url(#c16)"><text x="260.0" y="473" class="m" fill="#f2f2f2" textLength="90.0" lengthAdjust="spacing">cat .stack</text></g>
+<g opacity="0"><text x="62" y="497" class="m" fill="#f2f2f2" textLength="495.0" lengthAdjust="spacing">typescript  node  powershell  python  burp  docker  k8s</text><animate attributeName="opacity" calcMode="discrete" values="0;1" keyTimes="0.00000;0.62119" dur="14.439999999999998s" repeatCount="indefinite"/></g>
+<g opacity="0"><text x="62" y="545" class="m" fill="#8a8a8f" xml:space="preserve" textLength="198.0" lengthAdjust="spacing">kevin@MacBook-Pro ~ % </text><animate attributeName="opacity" calcMode="discrete" values="0;1" keyTimes="0.00000;0.64820" dur="14.439999999999998s" repeatCount="indefinite"/></g>
+<rect x="260.0" y="531" width="9.0" height="18" rx="1" fill="#f2f2f2" opacity="0"><animate attributeName="x" calcMode="discrete" values="260.0;260.0;269.0;278.0;287.0;296.0;305.0;314.0;260.0;269.0;278.0;287.0;296.0;305.0;314.0;323.0;332.0;341.0;350.0;359.0;368.0;377.0;386.0;395.0;260.0;269.0;278.0;287.0;296.0;305.0;314.0;323.0;332.0;341.0;350.0;359.0;368.0;377.0;260.0;269.0;278.0;287.0;296.0;305.0;314.0;323.0;332.0;341.0;350.0;359.0;368.0;377.0;386.0;395.0;404.0;260.0;269.0;278.0;287.0;296.0;305.0;314.0;323.0;332.0;341.0;350.0;260.0" keyTimes="0.00000;0.06856;0.07375;0.07895;0.08414;0.08934;0.09453;0.09972;0.14612;0.15132;0.15651;0.16170;0.16690;0.17209;0.17729;0.18248;0.18767;0.19287;0.19806;0.20325;0.20845;0.21364;0.21884;0.22403;0.30644;0.31163;0.31683;0.32202;0.32722;0.33241;0.33760;0.34280;0.34799;0.35319;0.35838;0.36357;0.36877;0.37396;0.42036;0.42555;0.43075;0.43594;0.44114;0.44633;0.45152;0.45672;0.46191;0.46711;0.47230;0.47749;0.48269;0.48788;0.49307;0.49827;0.50346;0.54986;0.55506;0.56025;0.56544;0.57064;0.57583;0.58102;0.58622;0.59141;0.59661;0.60180;0.64820" dur="14.439999999999998s" repeatCount="indefinite"/><animate attributeName="y" calcMode="discrete" values="75;123;195;315;387;459;531" keyTimes="0.00000;0.06856;0.14612;0.30644;0.42036;0.54986;0.64820" dur="14.439999999999998s" repeatCount="indefinite"/><animate attributeName="opacity" calcMode="discrete" values="0;1;0;1;0;1;0;1;0;1;0;1;0;1;0;1;0;1;0;1;0;1" keyTimes="0.00000;0.06856;0.11136;0.14612;0.23566;0.30644;0.38560;0.42036;0.51510;0.54986;0.61343;0.64820;0.66759;0.70429;0.74100;0.77770;0.81440;0.85111;0.88781;0.92452;0.96122;0.99792" dur="14.439999999999998s" repeatCount="indefinite"/></rect>
+<rect x="24.5" y="24.5" width="899" height="555" rx="10" fill="none" stroke="#ffffff" stroke-opacity="0.14" stroke-width="1"/>
 </svg>
