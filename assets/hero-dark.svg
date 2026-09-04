@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="290" viewBox="0 0 800 290" role="img" aria-label="Terminal window: kevin, security researcher and builder">
+  <style>
+    .t { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; font-size: 15px; }
+    .ui { font-family: ui-sans-serif, -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif; font-size: 13px; }
+  </style>
+  <rect x="0.5" y="0.5" width="799" height="289" rx="12" fill="#161617" stroke="#2f2f31"/>
+  <path d="M0.5 12.5A12 12 0 0 1 12.5 0.5h775A12 12 0 0 1 799.5 12.5V40.5H0.5Z" fill="#202022" stroke="#2f2f31"/>
+  <circle cx="24" cy="20" r="6" fill="#ff5f57"/>
+  <circle cx="44" cy="20" r="6" fill="#febc2e"/>
+  <circle cx="64" cy="20" r="6" fill="#28c840"/>
+  <text class="ui" x="400" y="25" text-anchor="middle" fill="#6e6e73">kevin — zsh — 80×24</text>
+
+  <text class="t" x="28" y="84" fill="#f5f5f7"><tspan fill="#6e6e73">$</tspan> whoami</text>
+  <text class="t" x="28" y="112" fill="#a1a1a6">kevin, security researcher and builder</text>
+
+  <text class="t" x="28" y="150" fill="#f5f5f7"><tspan fill="#6e6e73">$</tspan> cat ~/.principles</text>
+  <text class="t" x="28" y="178" fill="#a1a1a6">files stay on your machine. no upload, no telemetry, no build step.</text>
+
+  <text class="t" x="28" y="216" fill="#f5f5f7"><tspan fill="#6e6e73">$</tspan> ls ~/projects</text>
+  <text class="t" x="28" y="244" fill="#0a84ff">convert.in  qr.in  snipsearch  stelegraphy</text>
+  <rect x="28" y="262" width="9" height="18" rx="1" fill="#0a84ff" opacity="0.85"/>
+</svg>
