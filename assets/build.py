@@ -27,11 +27,11 @@ GAP = MARGIN * 2                       # the space between the two windows, 68, 
 LIGHTS = [("#ed6a5f", "#e24b41"), ("#f6be50", "#e1a73e"), ("#61c555", "#2dac2f")]
 
 LIGHT = dict(body="#ffffff", bar="#ececec", side="#f2f2f2", alt="#fafafa",
-             edge="#c9c9c9", hair="#d4d4d4", title="#4a4a4a", text="#1d1d1f",
-             dim="#86868b", key="#0071e3", sel="#0071e3", shadow=0.22, rim=0.5)
+             edge="#c9c9c9", hair="#dcdcde", title="#1d1d1f", text="#1d1d1f",
+             dim="#6e6e73", key="#0071e3", sel="#0071e3", shadow=0.22, rim=0.5)
 DARK = dict(body="#1e1e1e", bar="#333336", side="#252527", alt="#232325",
-            edge="#ffffff", hair="#000000", title="#d8d8da", text="#f2f2f2",
-            dim="#8a8a8f", key="#4aa8ff", sel="#0a84ff", shadow=0.55, rim=0.14)
+            edge="#ffffff", hair="#3a3a3d", title="#f5f5f7", text="#f2f2f2",
+            dim="#98989d", key="#4aa8ff", sel="#0a84ff", shadow=0.55, rim=0.14)
 THEMES = (("light", LIGHT), ("dark", DARK))
 
 UI = ('font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, '
@@ -70,7 +70,7 @@ def chrome(p, w, h, bar, radius=RADIUS, bar_x0=0):
 # --------------------------------------------------------------------------
 
 TW, TH, TBAR = 900, 556, 28     # 900 / 556 = 1.6187
-PAD_X, PAD_TOP = 38, 20
+PAD_X, PAD_TOP = 34, 21
 FS, LH, CW = 15, 24, 9.0        # 15 x 1.618 = 24 line height, 15 x 0.6 = 9 advance
 CHAR_S, ENTER_S, OUT_S, BLANK_S = 0.075, 0.28, 0.26, 0.13
 START_S, HOLD_S, BLINK_S = 0.6, 4.8, 0.53
@@ -228,7 +228,7 @@ def terminal(p):
 # window, so the capsules and the selection pills stay in the same family.
 
 FW, FH, FBAR, SIDE = 900, 344, 52, 170      # 900 / 344 = 2.6163, golden ratio squared
-ROW, HEADER = 24, 25
+ROW, HEADER = 24, 24
 
 SIDEBAR = ["AirDrop", "Recents", "Applications",
            "projects", "certifications", "awards"]
@@ -272,12 +272,12 @@ FOLDERS = {
 }
 
 FINDER_LIGHT = dict(body="#ffffff", bar="#f0f0f2", alt="#f7f7f8", btn="#e4e4e7",
-                    edge="#c9c9cd", hair="#e2e2e4", title="#1d1d1f", text="#1d1d1f",
-                    dim="#74747a", head="#8a8a8e", glyph="#3c3c3f", sel="#0a63fe",
+                    edge="#c9c9cd", hair="#dcdcde", title="#1d1d1f", text="#1d1d1f",
+                    dim="#6e6e73", head="#8a8a8e", glyph="#3c3c3f", sel="#0a63fe",
                     shadow=0.22, rim=0.5)
 FINDER_DARK = dict(body="#1f1f21", bar="#2a2a2d", alt="#252528", btn="#3a3a3e",
                    edge="#ffffff", hair="#3a3a3d", title="#f5f5f7", text="#f5f5f7",
-                   dim="#9a9aa0", head="#8e8e93", glyph="#d8d8dc", sel="#0a63fe",
+                   dim="#98989d", head="#8e8e93", glyph="#d8d8dc", sel="#0a63fe",
                    shadow=0.55, rim=0.14)
 FINDER_THEMES = (("light", FINDER_LIGHT), ("dark", FINDER_DARK))
 
@@ -360,12 +360,22 @@ KEYS = list(FOLDERS)
 CYCLE = DWELL * len(KEYS)
 
 
+EASE = "0 0 0.58 1"              # the ease-out curve Apple reaches for
+FADE = 0.28                      # a cross dissolve, inside the 0.2 to 0.5s HIG window
+
+
 def show(i):
-    """Discrete opacity keyframes: pane i is visible only during its own slot."""
-    values = ";".join("1" if j == i else "0" for j in range(len(KEYS)))
-    times = ";".join(f"{j / len(KEYS):.4f}" for j in range(len(KEYS)))
-    return (f'<animate attributeName="opacity" calcMode="discrete" values="{values}" '
-            f'keyTimes="{times}" dur="{CYCLE}s" repeatCount="indefinite"/>')
+    """Pane i holds its slot, then cross dissolves with the pane taking over."""
+    if i == 0:
+        values = "1;1;0;0;1"
+        times = [0, (DWELL - FADE) / CYCLE, DWELL / CYCLE, (CYCLE - FADE) / CYCLE, 1]
+    else:
+        a, b = i * DWELL, (i + 1) * DWELL
+        values = "0;0;1;1;0"
+        times = [0, (a - FADE) / CYCLE, a / CYCLE, (b - FADE) / CYCLE, b / CYCLE]
+    return (f'<animate attributeName="opacity" calcMode="spline" values="{values}" '
+            f'keyTimes="{";".join(f"{t:.5f}" for t in times)}" '
+            f'keySplines="{";".join([EASE] * 4)}" dur="{CYCLE}s" repeatCount="indefinite"/>')
 
 
 def cycled(parts, still_class=""):
@@ -458,7 +468,7 @@ def finder(p):
 <title id="t">A Finder window walking through projects, focus and toolbox</title>
 <desc id="d">A macOS Tahoe Finder window in list view. The sidebar selection moves from projects to focus to toolbox every {DWELL:.0f} seconds and the listing follows it. {html.escape(listing)}.</desc>
 <style>
-.w {{ {UI} font-size: 15px; font-weight: 600; }}
+.w {{ {UI} font-size: 13px; font-weight: 600; }}
 .b {{ {UI} font-size: 13px; }}
 .s {{ {UI} font-size: 11px; font-weight: 500; }}
 .still {{ display: none; }}
@@ -501,11 +511,12 @@ WEEKS = [
 ]
 
 GW, GH, GBAR = 900, 212, 28          # 900 / 212 = 4.25, near the golden ratio cubed
-LABEL, GPAD = 30, 38                 # weekday gutter, then the terminal's own padding
+LABEL, GPAD = 34, 34                 # weekday gutter, then the terminal's own padding
 GRID_W = GW - GPAD * 2 - LABEL
-CELL, GAP = 12.0, 3.06               # 53 columns land exactly on the grid width
-STEP = CELL + GAP
-REVEAL, GHOLD = 0.045, 5.0           # a column every 45ms, then the finished year holds
+GAP = 3.2                            # 53 columns land exactly on the grid width
+STEP = (GRID_W + GAP) / 53
+CELL = STEP - GAP
+REVEAL, GFADE, GHOLD = 0.045, 0.32, 5.0   # a column every 45ms, each fading in over 320ms
 
 GRAPH_LIGHT = dict(empty="#ebedf0", scale=["#9be9a8", "#40c463", "#30a14e", "#216e39"])
 GRAPH_DARK = dict(empty="#2b2b2e", scale=["#0e4429", "#006d32", "#26a641", "#39d353"])
@@ -543,9 +554,10 @@ def graph(p, g):
             fill = g["empty"] if lvl == "0" else g["scale"][int(lvl) - 1]
             col.append(f'<rect x="{gx + i * STEP:.1f}" y="{gy + row * STEP:.1f}" width="{CELL}" height="{CELL}" rx="3.5" fill="{fill}"/>')
         still.extend(col)
-        t = (0.5 + i * REVEAL) / cycle
-        cells.append(f'<g opacity="1">{"".join(col)}<animate attributeName="opacity" calcMode="discrete" '
-                     f'values="0;1" keyTimes="0;{t:.5f}" dur="{cycle}s" repeatCount="indefinite"/></g>')
+        t = 0.5 + i * REVEAL
+        cells.append(f'<g opacity="1">{"".join(col)}<animate attributeName="opacity" calcMode="spline" '
+                     f'values="0;0;1" keyTimes="0;{t / cycle:.5f};{(t + GFADE) / cycle:.5f}" '
+                     f'keySplines="{EASE};{EASE}" dur="{cycle}s" repeatCount="indefinite"/></g>')
     body.append(f'<g class="cycle">{"".join(cells)}</g><g class="still">{"".join(still)}</g>')
 
     # the specular sweep, one pass over the finished grid
