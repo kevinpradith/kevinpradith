@@ -20,8 +20,10 @@ percent rather than opening gaps between them.
 """
 
 import html
+from datetime import date, timedelta
 
-MARGIN, RADIUS, FRADIUS = 24, 14, 24   # Tahoe rounds hard, and rounds windows with a toolbar harder
+MARGIN, RADIUS, FRADIUS = 34, 16, 26   # Tahoe rounds hard, and rounds windows with a toolbar harder
+GAP = MARGIN * 2                       # the space between the two windows, 68, set here not in the README
 LIGHTS = [("#ed6a5f", "#e24b41"), ("#f6be50", "#e1a73e"), ("#61c555", "#2dac2f")]
 
 LIGHT = dict(body="#ffffff", bar="#ececec", side="#f2f2f2", alt="#fafafa",
@@ -49,7 +51,10 @@ def chrome(p, w, h, bar, radius=RADIUS, bar_x0=0):
             f'<g clip-path="url(#win)"><rect x="{ox + bar_x0}" y="{oy}" width="{w - bar_x0}" height="{bar}" fill="{p["bar"]}"/>')
     dots = "".join(f'<circle cx="{ox + 20 + n * 20}" cy="{oy + 26 if bar > 40 else oy + bar / 2}" r="6" '
                    f'fill="{f}" stroke="{s}" stroke-width="0.5"/>' for n, (f, s) in enumerate(LIGHTS))
-    tail = (f'</g>{dots}<rect x="{ox + 0.5}" y="{oy + 0.5}" width="{w - 1}" height="{h - 1}" rx="{radius}" '
+    # Liquid Glass catches the light along its top edge, then the window rim
+    tail = (f'</g>{dots}'
+            f'<path d="M{ox + radius} {oy + 0.75}h{w - radius * 2}" stroke="#ffffff" stroke-opacity="0.35" stroke-width="1.5"/>'
+            f'<rect x="{ox + 0.5}" y="{oy + 0.5}" width="{w - 1}" height="{h - 1}" rx="{radius}" '
             f'fill="none" stroke="{p["edge"]}" stroke-opacity="{p["rim"]}" stroke-width="1"/>')
     return head, tail
 
@@ -219,11 +224,12 @@ def terminal(p):
 FW, FH, FBAR, SIDE = 900, 344, 52, 170      # 900 / 344 = 2.6163, golden ratio squared
 ROW, HEADER = 24, 25
 
-SIDEBAR = ["AirDrop", "Recents", "Applications", "Desktop", "Documents",
-           "projects", "focus", "toolbox"]
+SIDEBAR = ["AirDrop", "Recents", "Applications",
+           "projects", "focus", "toolbox", "certifications", "awards"]
 
-# projects keeps the columns Finder shows by default. focus and toolbox swap
-# Size and Date Modified for Comments, so nothing on screen is invented.
+# projects keeps the columns Finder shows by default. The other folders swap
+# Size for Comments, so nothing on screen is invented: every date, credential
+# and placement below is the real one.
 FOLDERS = {
     "projects": dict(
         icon="folder", disclosure=True,
@@ -255,6 +261,29 @@ FOLDERS = {
               ("Docker", "Container", "reproducible test environments"),
               ("Kubernetes", "Orchestrator", "lab clusters on MicroK8s"),
               ("WSL", "Subsystem", "Linux tooling on a Windows machine")]),
+    "certifications": dict(
+        icon="doc", disclosure=False,
+        columns=[("Name", 50, "start"), ("Kind", 330, "start"),
+                 ("Date Modified", 460, "start"), ("Comments", 600, "start")],
+        rules=[320, 450, 590],
+        rows=[("aws-cloud-genai.pdf", "Dicoding", "Feb 2026", "2VX302O83XYQ"),
+              ("azure-genai.pdf", "Dicoding", "Apr 2026", "0LZ0YR3LNX65"),
+              ("backend-javascript.pdf", "Dicoding", "Feb 2026", "L4PQ93142PO1"),
+              ("javascript-dasar.pdf", "Dicoding", "Feb 2026", "KEXLQ313WPG2"),
+              ("microsoft-fabric.pdf", "Dicoding", "Mar 2026", "4EXG1NYVDPRL"),
+              ("python-dasar.pdf", "Dicoding", "Apr 2026", "KEXLQ78KWPG2")]),
+    "awards": dict(
+        icon="doc", disclosure=False,
+        columns=[("Name", 50, "start"), ("Kind", 300, "start"),
+                 ("Date Modified", 430, "start"), ("Comments", 545, "start")],
+        rules=[290, 420, 535],
+        rows=[("technotainment-uiux.pdf", "1st place", "Jul 2026", "Trunojoyo Madura"),
+              ("iofest-webdev.pdf", "1st place", "Jun 2026", "Tarumanagara"),
+              ("lks-cybersecurity.pdf", "2nd place", "Jun 2026", "Disdik Jawa Barat"),
+              ("ibfest-cyberlite.pdf", "2nd place", "May 2026", "Telkomsel"),
+              ("samsung-ai.pdf", "Winner", "May 2026", "Samsung Indonesia"),
+              ("ehax-ctf.pdf", "Top 88 of 887", "Mar 2026", "Delhi Technological University"),
+              ("jhic-infra.pdf", "Semi-finalist", "Nov 2025", "Jagoan Hosting")]),
 }
 
 FINDER_LIGHT = dict(body="#ffffff", bar="#f0f0f2", alt="#f7f7f8", btn="#e4e4e7",
@@ -308,8 +337,9 @@ def side_glyph(name, x, y, tint):
     return g.get(name, folder(x, y + 1, 15, tint))
 
 
-def capsule(p, x, y, w, h=28, r=9):
-    """Tahoe shows toolbar button groups all the time, not only on hover."""
+def capsule(p, x, y, w, h=28, r=None):
+    """Tahoe shows toolbar button groups all the time, and rounds them fully."""
+    r = h / 2 if r is None else r
     return f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{r}" fill="{p["btn"]}" fill-opacity="0.85"/>'
 
 
@@ -340,7 +370,7 @@ def tool_glyph(p, kind, x, y):
             f'<path d="M{x + 11} {y + 11}l4 4" stroke="{c}" stroke-width="{sw}" stroke-linecap="round"/>')
 
 
-DWELL = 4.0                      # seconds each folder stays selected
+DWELL = 3.5                      # seconds each folder stays selected
 KEYS = list(FOLDERS)
 CYCLE = DWELL * len(KEYS)
 
@@ -371,7 +401,7 @@ def pane(p, key):
 
     # the selection pill sits on top of the sidebar row it covers
     sy = oy + FBAR + 28 + SIDEBAR.index(key) * 28
-    out.append(f'<rect x="{ox + 8}" y="{sy}" width="{SIDE - 16}" height="26" rx="8" fill="{p["sel"]}"/>')
+    out.append(f'<rect x="{ox + 8}" y="{sy}" width="{SIDE - 16}" height="26" rx="13" fill="{p["sel"]}"/>')
     out.append(side_glyph(key, ox + 18, sy + 5, "#ffffff"))
     out.append(f'<text class="b" x="{ox + 42}" y="{sy + 17}" fill="#ffffff">{key}</text>')
 
@@ -457,6 +487,122 @@ def finder(p):
 </svg>
 '''
 
+# --------------------------------------------------------------------------
+# contributions
+# --------------------------------------------------------------------------
+#
+# GitHub draws its own calendar on the profile page and a README cannot restyle
+# it, so this is the same data as a Tahoe panel: a glass title bar over the
+# grid, cells carrying the concentric radius the windows use, and a specular
+# sweep crossing once a cycle the way Liquid Glass catches light. The levels
+# are real, read on 4 Sep 2026 and refreshed with
+#
+#   curl -s https://github.com/users/kevinpradith/contributions
+#
+# taking data-level off each ContributionCalendar-day cell. One string a week,
+# Sunday first, "_" where the calendar carries no day.
+
+GTOTAL, GSTART = 842, date(2025, 8, 31)
+WEEKS = [
+    "0000000", "0000000", "0000000", "0100000", "0000000", "0000001",
+    "0000000", "0110100", "0000000", "0000000", "0100010", "0000000",
+    "0000000", "0000000", "0000000", "0000000", "0000000", "0000000",
+    "0000000", "0000000", "0000000", "0010100", "1122101", "1101100",
+    "0111101", "0100000", "0001100", "0000000", "0000000", "1110111",
+    "0011111", "1210010", "1011101", "1210100", "0233400", "0000000",
+    "0011011", "1111101", "3111100", "0000000", "0001100", "0000000",
+    "0000000", "0000000", "0000000", "0000000", "0000000", "0000010",
+    "1100000", "0000000", "0000011", "0311100", "011122_",
+]
+
+GW, GH, GBAR = 900, 212, 28          # 900 / 212 = 4.25, near the golden ratio cubed
+LABEL, GPAD = 30, 38                 # weekday gutter, then the terminal's own padding
+GRID_W = GW - GPAD * 2 - LABEL
+CELL, GAP = 12.0, 3.06               # 53 columns land exactly on the grid width
+STEP = CELL + GAP
+REVEAL, GHOLD = 0.045, 5.0           # a column every 45ms, then the finished year holds
+
+GRAPH_LIGHT = dict(empty="#ebedf0", scale=["#9be9a8", "#40c463", "#30a14e", "#216e39"])
+GRAPH_DARK = dict(empty="#2b2b2e", scale=["#0e4429", "#006d32", "#26a641", "#39d353"])
+GRAPHS = {"light": GRAPH_LIGHT, "dark": GRAPH_DARK}
+
+
+def graph(p, g):
+    head, tail = chrome(p, GW, GH, GBAR)
+    ox = oy = MARGIN
+    gx = ox + GPAD + LABEL
+    gy = oy + GBAR + 26
+    grid_h = 7 * STEP - GAP
+    cycle = round(0.5 + len(WEEKS) * REVEAL + GHOLD, 2)
+    sweep_at = (0.5 + len(WEEKS) * REVEAL) / cycle
+
+    body = [head]
+    body.append(f'<line x1="{ox}" y1="{oy + GBAR}" x2="{ox + GW}" y2="{oy + GBAR}" stroke="{p["hair"]}" stroke-width="1"/>')
+
+    # a month label above the first column that opens a new month, as GitHub does
+    seen = GSTART.month
+    for i in range(len(WEEKS)):
+        d = GSTART + timedelta(days=7 * i)
+        if d.month != seen:
+            seen = d.month
+            body.append(f'<text class="g" x="{gx + i * STEP:.1f}" y="{gy - 9}" fill="{p["dim"]}">{d.strftime("%b")}</text>')
+    for row, name in ((1, "Mon"), (3, "Wed"), (5, "Fri")):
+        body.append(f'<text class="g" x="{ox + GPAD}" y="{gy + row * STEP + CELL - 2:.1f}" fill="{p["dim"]}">{name}</text>')
+
+    cells, still = [], []
+    for i, week in enumerate(WEEKS):
+        col = []
+        for row, lvl in enumerate(week):
+            if lvl == "_":
+                continue
+            fill = g["empty"] if lvl == "0" else g["scale"][int(lvl) - 1]
+            col.append(f'<rect x="{gx + i * STEP:.1f}" y="{gy + row * STEP:.1f}" width="{CELL}" height="{CELL}" rx="3.5" fill="{fill}"/>')
+        still.extend(col)
+        t = (0.5 + i * REVEAL) / cycle
+        cells.append(f'<g opacity="1">{"".join(col)}<animate attributeName="opacity" calcMode="discrete" '
+                     f'values="0;1" keyTimes="0;{t:.5f}" dur="{cycle}s" repeatCount="indefinite"/></g>')
+    body.append(f'<g class="cycle">{"".join(cells)}</g><g class="still">{"".join(still)}</g>')
+
+    # the specular sweep, one pass over the finished grid
+    body.append(f'<g class="cycle" clip-path="url(#grid)"><rect y="{gy}" width="130" height="{grid_h:.1f}" fill="url(#sweep)" x="{gx - 200:.0f}">'
+                f'<animate attributeName="x" values="{gx - 200:.0f};{gx - 200:.0f};{gx + GRID_W + 60:.0f};{gx + GRID_W + 60:.0f}" '
+                f'keyTimes="0;{sweep_at:.5f};{min(sweep_at + 0.18, 0.99):.5f};1" dur="{cycle}s" repeatCount="indefinite"/></rect></g>')
+
+    ly = gy + grid_h + 24
+    body.append(f'<text class="g" x="{gx}" y="{ly:.1f}" fill="{p["dim"]}">{GTOTAL} contributions in the last year</text>')
+    lx = ox + GW - GPAD - 5 * STEP - 34
+    body.append(f'<text class="g" x="{lx - 8:.1f}" y="{ly:.1f}" text-anchor="end" fill="{p["dim"]}">Less</text>')
+    for n, fill in enumerate([g["empty"]] + g["scale"]):
+        body.append(f'<rect x="{lx + n * STEP:.1f}" y="{ly - 10:.1f}" width="{CELL}" height="{CELL}" rx="3.5" fill="{fill}"/>')
+    body.append(f'<text class="g" x="{lx + 5 * STEP + 6:.1f}" y="{ly:.1f}" fill="{p["dim"]}">More</text>')
+    body.append(tail)
+
+    end = (GSTART + timedelta(days=7 * len(WEEKS) - 1)).strftime("%d %B %Y")
+    return f'''<svg xmlns="http://www.w3.org/2000/svg" width="{GW + MARGIN * 2}" height="{GH + MARGIN * 2}" viewBox="0 0 {GW + MARGIN * 2} {GH + MARGIN * 2}" role="img" aria-labelledby="t d">
+<title id="t">{GTOTAL} contributions in the last year</title>
+<desc id="d">The GitHub contribution calendar for the year ending {end}, {GTOTAL} contributions in all, drawn as a macOS panel. The weeks fill in from left to right.</desc>
+<defs>
+<clipPath id="grid"><rect x="{gx}" y="{gy}" width="{GRID_W}" height="{grid_h:.1f}"/></clipPath>
+<linearGradient id="sweep" x1="0" y1="0" x2="1" y2="0">
+<stop offset="0" stop-color="#ffffff" stop-opacity="0"/>
+<stop offset="0.5" stop-color="#ffffff" stop-opacity="0.4"/>
+<stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+</linearGradient>
+</defs>
+<style>
+.u {{ {UI} font-size: 13px; font-weight: 600; }}
+.g {{ {UI} font-size: 11px; }}
+.still {{ display: none; }}
+@media (prefers-reduced-motion: reduce) {{
+  .cycle {{ display: none; }}
+  .still {{ display: inline; }}
+}}
+</style>
+{"".join(body)}
+<text class="u" x="{MARGIN + GW / 2}" y="{MARGIN + 19}" text-anchor="middle" fill="{p["title"]}">contributions</text>
+</svg>
+'''
+
 
 if __name__ == "__main__":
     for name, palette in THEMES:
@@ -467,4 +613,9 @@ if __name__ == "__main__":
         path = f"assets/finder-{name}.svg"
         with open(path, "w") as f:
             f.write(finder(palette))
+        print(path)
+    for name, palette in THEMES:
+        path = f"assets/graph-{name}.svg"
+        with open(path, "w") as f:
+            f.write(graph(palette, GRAPHS[name]))
         print(path)
