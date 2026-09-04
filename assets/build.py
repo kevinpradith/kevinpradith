@@ -385,11 +385,11 @@ FOLDERS = {
 
 FINDER_LIGHT = dict(body="#ffffff", bar="#f0f0f2", panel="#f6f6f8", alt="#f7f7f8", btn="#e4e4e7",
                     edge="#c9c9cd", hair="#dcdcde", title="#1d1d1f", text="#1d1d1f",
-                    dim="#6e6e73", head="#8a8a8e", glyph="#3c3c3f", sel="#0a63fe",
+                    dim="#6e6e73", head="#8a8a8e", glyph="#3c3c3f", sel="#0a63fe", seg="#ffffff",
                     shadow=0.22, rim=0.5)
 FINDER_DARK = dict(body="#1f1f21", bar="#2a2a2d", panel="#303033", alt="#252528", btn="#3a3a3e",
                    edge="#ffffff", hair="#3a3a3d", title="#f5f5f7", text="#f5f5f7",
-                   dim="#98989d", head="#8e8e93", glyph="#d8d8dc", sel="#0a63fe",
+                   dim="#98989d", head="#8e8e93", glyph="#d8d8dc", sel="#0a63fe", seg="#5a5a60",
                    shadow=0.55, rim=0.14)
 FINDER_THEMES = (("light", FINDER_LIGHT), ("dark", FINDER_DARK))
 
@@ -446,6 +446,7 @@ def capsule(p, x, y, w, h=28, r=None):
 # Every toolbar symbol is drawn on a 16 unit box except the group control,
 # which carries a disclosure chevron beside it.
 GLYPH_W = {"group": 24}
+GPAD_X = 14            # the gap Tahoe leaves between a symbol and its glass
 
 
 def tool_glyph(p, kind, x, y):
@@ -654,15 +655,18 @@ def finder(p):
               (("search",), "Search")]
     gx = ox + FW - 16
     for names, caption in reversed(groups):
-        w = 30 * len(names) + 14
+        # the glass is cut to fit its symbols, so every group keeps the same
+        # 14 point breathing room whether it holds one symbol or four, and the
+        # wider group control does not end up squeezed against its own edges
+        run = 30 * (len(names) - 1) + GLYPH_W.get(names[-1], 16)
+        w = run + GPAD_X * 2
         gx -= w
         tb.append(capsule(p, gx, gy, w, 30))
-        run = 30 * (len(names) - 1) + GLYPH_W.get(names[-1], 16)
-        x0 = gx + (w - run) / 2                 # centre the symbols in their own glass
+        x0 = gx + GPAD_X
         for n, name in enumerate(names):
             if name == "list":
                 tb.append(f'<rect x="{x0 + n * 30 - 6}" y="{gy + 3}" width="28" height="24" rx="7" '
-                          f'fill="{p["body"]}" fill-opacity="0.9"/>')
+                          f'fill="{p["seg"]}"/>')
             tb.append(tool_glyph(p, name, x0 + n * 30, gy + 7))
         tb.append(f'<text class="c" x="{gx + w / 2}" y="{cap_y}" text-anchor="middle" fill="{p["dim"]}">{caption}</text>')
         gx -= 8
