@@ -516,7 +516,8 @@ GRID_W = GW - GPAD * 2 - LABEL
 GAP = 3.2                            # 53 columns land exactly on the grid width
 STEP = (GRID_W + GAP) / 53
 CELL = STEP - GAP
-REVEAL, GFADE, GHOLD = 0.045, 0.32, 5.0   # a column every 45ms, each fading in over 320ms
+REVEAL, GFADE = 0.045, 0.32          # a column every 45ms, each fading in over 320ms
+SWEEP, SWEEP_IN = 7.0, 1.7           # then a specular pass every 7s, crossing in 1.7s
 
 GRAPH_LIGHT = dict(empty="#ebedf0", scale=["#9be9a8", "#40c463", "#30a14e", "#216e39"])
 GRAPH_DARK = dict(empty="#2b2b2e", scale=["#0e4429", "#006d32", "#26a641", "#39d353"])
@@ -529,8 +530,7 @@ def graph(p, g):
     gx = ox + GPAD + LABEL
     gy = oy + GBAR + 26
     grid_h = 7 * STEP - GAP
-    cycle = round(0.5 + len(WEEKS) * REVEAL + GHOLD, 2)
-    sweep_at = (0.5 + len(WEEKS) * REVEAL) / cycle
+    fill_in = round(0.4 + len(WEEKS) * REVEAL + GFADE, 2)   # the year draws once, then stays
 
     body = [head]
     body.append(f'<line x1="{ox}" y1="{oy + GBAR}" x2="{ox + GW}" y2="{oy + GBAR}" stroke="{p["hair"]}" stroke-width="1"/>')
@@ -545,25 +545,30 @@ def graph(p, g):
     for row, name in ((1, "Mon"), (3, "Wed"), (5, "Fri")):
         body.append(f'<text class="g" x="{ox + GPAD}" y="{gy + row * STEP + CELL - 2:.1f}" fill="{p["dim"]}">{name}</text>')
 
-    cells, still = [], []
+    cells, still, tiles = [], [], []
     for i, week in enumerate(WEEKS):
         col = []
         for row, lvl in enumerate(week):
             if lvl == "_":
                 continue
             fill = g["empty"] if lvl == "0" else g["scale"][int(lvl) - 1]
-            col.append(f'<rect x="{gx + i * STEP:.1f}" y="{gy + row * STEP:.1f}" width="{CELL}" height="{CELL}" rx="3.5" fill="{fill}"/>')
+            box = (f'x="{gx + i * STEP:.1f}" y="{gy + row * STEP:.1f}" '
+                   f'width="{CELL:.2f}" height="{CELL:.2f}" rx="3.5"')
+            col.append(f'<rect {box} fill="{fill}"/>')
+            tiles.append(f'<rect {box}/>')
         still.extend(col)
-        t = 0.5 + i * REVEAL
+        t = 0.4 + i * REVEAL
         cells.append(f'<g opacity="1">{"".join(col)}<animate attributeName="opacity" calcMode="spline" '
-                     f'values="0;0;1" keyTimes="0;{t / cycle:.5f};{(t + GFADE) / cycle:.5f}" '
-                     f'keySplines="{EASE};{EASE}" dur="{cycle}s" repeatCount="indefinite"/></g>')
+                     f'values="0;0;1" keyTimes="0;{t / fill_in:.5f};{(t + GFADE) / fill_in:.5f}" '
+                     f'keySplines="{EASE};{EASE}" dur="{fill_in}s" repeatCount="1" fill="freeze"/></g>')
     body.append(f'<g class="cycle">{"".join(cells)}</g><g class="still">{"".join(still)}</g>')
 
-    # the specular sweep, one pass over the finished grid
-    body.append(f'<g class="cycle" clip-path="url(#grid)"><rect y="{gy}" width="130" height="{grid_h:.1f}" fill="url(#sweep)" x="{gx - 200:.0f}">'
-                f'<animate attributeName="x" values="{gx - 200:.0f};{gx - 200:.0f};{gx + GRID_W + 60:.0f};{gx + GRID_W + 60:.0f}" '
-                f'keyTimes="0;{sweep_at:.5f};{min(sweep_at + 0.18, 0.99):.5f};1" dur="{cycle}s" repeatCount="indefinite"/></rect></g>')
+    # the year holds, and the only thing that repeats is the specular pass, a
+    # slow highlight crossing the finished grid the way light crosses glass
+    body.append(f'<g class="cycle" clip-path="url(#tiles)"><rect y="{gy}" width="96" height="{grid_h:.1f}" fill="url(#sweep)" x="{gx - 220:.0f}" transform="skewX(-14)">'
+                f'<animate attributeName="x" values="{gx - 220:.0f};{gx + GRID_W + 70:.0f};{gx + GRID_W + 70:.0f}" '
+                f'keyTimes="0;{SWEEP_IN / SWEEP:.5f};1" calcMode="spline" keySplines="0.42 0 0.58 1;0 0 1 1" '
+                f'begin="{fill_in}s" dur="{SWEEP}s" repeatCount="indefinite"/></rect></g>')
 
     ly = gy + grid_h + 24
     body.append(f'<text class="g" x="{gx}" y="{ly:.1f}" fill="{p["dim"]}">{GTOTAL} contributions in the last year</text>')
@@ -579,10 +584,10 @@ def graph(p, g):
 <title id="t">{GTOTAL} contributions in the last year</title>
 <desc id="d">The GitHub contribution calendar for the year ending {end}, {GTOTAL} contributions in all, drawn as a macOS panel. The weeks fill in from left to right.</desc>
 <defs>
-<clipPath id="grid"><rect x="{gx}" y="{gy}" width="{GRID_W}" height="{grid_h:.1f}"/></clipPath>
+<clipPath id="tiles">{"".join(tiles)}</clipPath>
 <linearGradient id="sweep" x1="0" y1="0" x2="1" y2="0">
 <stop offset="0" stop-color="#ffffff" stop-opacity="0"/>
-<stop offset="0.5" stop-color="#ffffff" stop-opacity="0.4"/>
+<stop offset="0.5" stop-color="#ffffff" stop-opacity="0.18"/>
 <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
 </linearGradient>
 </defs>
