@@ -427,7 +427,7 @@ def finder(p):
 
     # one glass layer: the sidebar runs the full height, the toolbar continues it
     body.append(f'<rect x="{ox}" y="{oy}" width="{SIDE}" height="{FH}" fill="{p["bar"]}"/>')
-    body.append(f'<path d="M{cx} {oy}v{FH}" stroke="{p["hair"]}" stroke-width="1"/>')
+    body.append(f'<path d="M{cx} {oy + FBAR}v{FH - FBAR}" stroke="{p["hair"]}" stroke-opacity="0.7" stroke-width="1"/>')
     body.append(f'<text class="s" x="{ox + 18}" y="{oy + FBAR + 18}" fill="{p["head"]}">Favourites</text>')
     for n, item in enumerate(SIDEBAR):
         y = oy + FBAR + 28 + n * 28
@@ -443,7 +443,7 @@ def finder(p):
           f'<path d="M{cx + 58} {oy + 20}l5 6-5 6" fill="none" stroke="{p["glyph"]}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>',
           cycled([f'<text class="w" x="{cx + 96}" y="{oy + 32}" fill="{p["title"]}">{key}</text>' for key in KEYS])]
     groups = [("list", "sort"), ("group",), ("share",), ("tag",), ("more",), ("search",)]
-    gx = ox + FW - 20
+    gx = ox + FW - 14
     for names in reversed(groups):
         w = 30 * len(names) + 14
         gx -= w
