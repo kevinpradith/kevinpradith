@@ -460,9 +460,15 @@ def tool_glyph(p, kind, x, y):
         return (f'<path d="M{x + 4} {y + 5}l3-3.5 3 3.5" fill="none" stroke="{c}" stroke-width="{sw}" stroke-linecap="round" stroke-linejoin="round"/>'
                 f'<path d="M{x + 4} {y + 9}l3 3.5 3-3.5" fill="none" stroke="{c}" stroke-width="{sw}" stroke-linecap="round" stroke-linejoin="round"/>')
     if kind == "group":
-        return ("".join(f'<rect x="{x + 1 + col * 5.5}" y="{y + 2 + row * 5.5}" width="4" height="4" rx="1.2" fill="{c}"/>'
-                        for row in range(2) for col in range(3))
-                + f'<path d="M{x + 19} {y + 6}l2.5 3 2.5-3" fill="none" stroke="{c}" stroke-width="{sw}" stroke-linecap="round" stroke-linejoin="round"/>')
+        # Tahoe stacks two groups, each a rule with a row of three hollow cells
+        # under it, and hangs a wide shallow chevron off the right, gapped.
+        rows = "".join(
+            f'<path d="M{x + 0.8} {y + 2.6 + row * 6}h14.4" stroke="{c}" stroke-width="1.2" stroke-linecap="round"/>'
+            + "".join(f'<rect x="{x + 0.8 + col * 5.2}" y="{y + 4.2 + row * 6}" width="4" height="3.4" '
+                      f'rx="1.1" fill="none" stroke="{c}" stroke-width="1.1"/>' for col in range(3))
+            for row in range(2))
+        return rows + (f'<path d="M{x + 18.5} {y + 6.6}l2.75 3.2 2.75-3.2" fill="none" stroke="{c}" '
+                       f'stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>')
     if kind == "share":
         return (f'<path d="M{x + 8} {y + 11}V{y + 1}m0 0-3.5 3.5M{x + 8} {y + 1}l3.5 3.5" fill="none" stroke="{c}" stroke-width="{sw}" stroke-linecap="round" stroke-linejoin="round"/>'
                 f'<path d="M{x + 3} {y + 7}H{x + 1.5}v7.5h13V{y + 7}H{x + 13}" fill="none" stroke="{c}" stroke-width="{sw}" stroke-linecap="round" stroke-linejoin="round"/>')
@@ -480,9 +486,9 @@ def tool_glyph(p, kind, x, y):
                 + "".join(f'<rect x="{x + 1 + n * 5}" y="{y + 12}" width="3.4" height="3" rx="1" fill="{c}"/>'
                           for n in range(3)))
     if kind == "more":
-        return ("".join(f'<circle cx="{x + 2 + n * 5}" cy="{y + 8}" r="1.5" fill="{c}"/>' for n in range(3))
-                + f'<circle cx="{x + 7} " cy="{y + 8}" r="8" fill="none" stroke="{c}" stroke-width="1.3" stroke-opacity="0.7"/>')
-    return (f'<circle cx="{x + 7} " cy="{y + 7}" r="5.5" fill="none" stroke="{c}" stroke-width="{sw}"/>'
+        # the Action button is three bare dots on the glass, Tahoe rings nothing
+        return "".join(f'<circle cx="{x + 3 + n * 5}" cy="{y + 8}" r="1.6" fill="{c}"/>' for n in range(3))
+    return (f'<circle cx="{x + 7}" cy="{y + 7}" r="5.5" fill="none" stroke="{c}" stroke-width="{sw}"/>'
             f'<path d="M{x + 11} {y + 11}l4 4" stroke="{c}" stroke-width="{sw}" stroke-linecap="round"/>')
 
 
