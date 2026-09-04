@@ -225,7 +225,7 @@ FW, FH, FBAR, SIDE = 900, 344, 52, 170      # 900 / 344 = 2.6163, golden ratio s
 ROW, HEADER = 24, 25
 
 SIDEBAR = ["AirDrop", "Recents", "Applications",
-           "projects", "focus", "toolbox", "certifications", "awards"]
+           "projects", "certifications", "awards"]
 
 # projects keeps the columns Finder shows by default. The other folders swap
 # Size for Comments, so nothing on screen is invented: every date, credential
@@ -240,27 +240,6 @@ FOLDERS = {
               ("qr.in", "Sep 4, 2026 at 07:49", "229 KB", ("HTML", "#e34c26")),
               ("snipsearch", "Sep 4, 2026 at 00:08", "29 KB", ("PowerShell", "#5391fe")),
               ("stelegraphy", "Sep 3, 2026 at 10:26", "380 KB", ("TypeScript", "#3178c6"))]),
-    "focus": dict(
-        icon="doc", disclosure=False,
-        columns=[("Name", 50, "start"), ("Kind", 260, "start"), ("Comments", 400, "start")],
-        rules=[250, 390],
-        rows=[("authorization.md", "Bug class", "IDOR, tenant isolation, privilege boundaries"),
-              ("ssrf.md", "Bug class", "internal metadata, blind callbacks, filter bypass"),
-              ("exposed-config.md", "Bug class", "leaked env, build manifests, open storage"),
-              ("local-first.md", "Principle", "if it runs in the browser it needs no server"),
-              ("reporting.md", "Principle", "reproducible steps, demonstrated impact")]),
-    "toolbox": dict(
-        icon="app", disclosure=False,
-        columns=[("Name", 50, "start"), ("Kind", 260, "start"), ("Comments", 400, "start")],
-        rules=[250, 390],
-        rows=[("TypeScript", "Language", "apps and CLIs that share one core"),
-              ("Node", "Runtime", "build scripts and CLI entry points"),
-              ("PowerShell", "Shell", "Windows tooling, snipsearch"),
-              ("Python", "Language", "glue, generators, quick analysis"),
-              ("Burp Suite", "Proxy", "every request in an engagement"),
-              ("Docker", "Container", "reproducible test environments"),
-              ("Kubernetes", "Orchestrator", "lab clusters on MicroK8s"),
-              ("WSL", "Subsystem", "Linux tooling on a Windows machine")]),
     "certifications": dict(
         icon="doc", disclosure=False,
         columns=[("Name", 50, "start"), ("Kind", 330, "start"),
@@ -370,7 +349,7 @@ def tool_glyph(p, kind, x, y):
             f'<path d="M{x + 11} {y + 11}l4 4" stroke="{c}" stroke-width="{sw}" stroke-linecap="round"/>')
 
 
-DWELL = 3.5                      # seconds each folder stays selected
+DWELL = 4.0                      # seconds each folder stays selected
 KEYS = list(FOLDERS)
 CYCLE = DWELL * len(KEYS)
 
