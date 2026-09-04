@@ -197,6 +197,29 @@ def schedule():
     return lines, t + HOLD_S, t
 
 
+def move(xs, xt, ys, yt, x0, y0, cycle):
+    """Merge the cursor's two tracks into one transform.
+
+    Animating x and y moves the rect itself, which the renderer lays out again
+    on every step. A translate rides the compositor instead, and one animation
+    cannot disagree with itself about where the caret is.
+    """
+    marks = sorted(set(xt) | set(yt))
+    xi = yi = 0
+    values, times = [], []
+    for t in marks:
+        while xi + 1 < len(xt) and xt[xi + 1] <= t:
+            xi += 1
+        while yi + 1 < len(yt) and yt[yi + 1] <= t:
+            yi += 1
+        values.append(f"{xs[xi] - x0:.1f} {ys[yi] - y0:.1f}")
+        times.append(t)
+    return (f'<animateTransform attributeName="transform" type="translate" calcMode="discrete" '
+            f'values="{";".join(values)}" '
+            f'keyTimes="{";".join(f"{min(t / cycle, 1):.5f}" for t in times)}" '
+            f'dur="{cycle}s" repeatCount="indefinite"/>')
+
+
 def anim(attr, values, times, cycle):
     v = ";".join(str(round(x, 2)) if isinstance(x, float) else str(x) for x in values)
     k = ";".join(f"{min(x / cycle, 1):.5f}" for x in times)
@@ -267,13 +290,14 @@ def terminal(p):
 
     last_y = top + (len(lines) - 1) * LH + 17
     box = f'x="{x + pw:.1f}" y="{last_y - 14}" width="{CW}" height="18" rx="1" fill="{p["text"]}"'
-    cursor = (f'<rect {box} opacity="0">{anim("x", cur_x, cur_xt, cycle)}'
-              f'{anim("y", cur_y, cur_yt, cycle)}{anim("opacity", cur_o, cur_ot, cycle)}</rect>')
+    cursor = (f'<g>{move(cur_x, cur_xt, cur_y, cur_yt, x + pw, last_y - 14, cycle)}'
+              f'<rect {box} opacity="0">{anim("opacity", cur_o, cur_ot, cycle)}</rect></g>')
     still.append(f'<rect {box}/>')
 
-    # Terminal names a window after the folder, then the login, the working
-    # directory, the shell and the grid, joined with em dashes.
-    title = f"kevin \u2014 kevin@pradith \u2014 ~ \u2014 -zsh \u2014 {COLS}\u00d7{ROWS}"
+    # Terminal names a window after the login, the working directory, the shell
+    # and the grid. It joins them with em dashes; these are middots instead, so
+    # the bar reads as one line rather than a row of rules.
+    title = f"kevin@pradith \u00b7 ~ \u00b7 zsh \u00b7 {COLS}\u00d7{ROWS}"
     title_w = len(title) * 6.4          # SF Pro Text at 13px, close enough to centre the icon
 
     return f'''<svg xmlns="http://www.w3.org/2000/svg" width="{TW + MARGIN * 2}" height="{TH + MARGIN * 2}" viewBox="0 0 {TW + MARGIN * 2} {TH + MARGIN * 2}" role="img" aria-labelledby="t d">
@@ -419,6 +443,11 @@ def capsule(p, x, y, w, h=28, r=None):
     return f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{r}" fill="{p["btn"]}" fill-opacity="0.85"/>'
 
 
+# Every toolbar symbol is drawn on a 16 unit box except the group control,
+# which carries a disclosure chevron beside it.
+GLYPH_W = {"group": 24}
+
+
 def tool_glyph(p, kind, x, y):
     """SF Symbols in the toolbar, each drawn around a 16 unit box at x, y."""
     c, sw = p["glyph"], 1.6
@@ -507,16 +536,22 @@ def settle(i):
 
 
 def pill_track(y_of):
-    """One selection pill for the whole window, sliding row to row."""
+    """One selection pill for the whole window, sliding row to row.
+
+    It travels on a transform rather than on its own y, so the browser moves a
+    composited layer instead of laying the rect out again on every frame, and
+    it leaves on MOVE_EASE, the curve a SwiftUI smooth spring settles along.
+    """
+    home = y_of(KEYS[0])
     values, times, splines = [], [], []
     for i in range(len(KEYS)):
-        y = y_of(KEYS[i])
-        values += [y, y]
+        dy = y_of(KEYS[i]) - home
+        values += [f"0 {dy}", f"0 {dy}"]
         times += [i * DWELL / CYCLE, ((i + 1) * DWELL - SLIDE) / CYCLE]
         splines += [MOVE_EASE, MOVE_EASE]
-    values.append(y_of(KEYS[0]))
+    values.append("0 0")
     times.append(1.0)
-    return keyframes("y", values, times, splines[:len(values) - 1], CYCLE)
+    return keyframes("translate", values, times, splines[:len(values) - 1], CYCLE)
 
 
 def cycled(parts, mover=None):
@@ -587,10 +622,10 @@ def finder(p):
         return py + 16 + SIDEBAR.index(item) * 28
 
     # the selection is one pill that travels, rather than six that blink
-    pill = (f'x="{ox + 8}" y="{row_y(KEYS[0])}" width="{SIDE - 16}" height="26" '
-            f'rx="8" fill="{p["sel"]}"')
-    body.append(f'<rect class="cycle" {pill}>{pill_track(row_y)}</rect>')
-    body.append(f'<rect class="still" {pill}/>')
+    pill = (f'<rect x="{ox + 8}" y="{row_y(KEYS[0])}" width="{SIDE - 16}" height="26" '
+            f'rx="8" fill="{p["sel"]}"/>')
+    body.append(f'<g class="cycle">{pill_track(row_y)}{pill}</g>')
+    body.append(f'<g class="still">{pill}</g>')
 
     for item in SIDEBAR:
         y = row_y(item)
@@ -622,11 +657,13 @@ def finder(p):
         w = 30 * len(names) + 14
         gx -= w
         tb.append(capsule(p, gx, gy, w, 30))
+        run = 30 * (len(names) - 1) + GLYPH_W.get(names[-1], 16)
+        x0 = gx + (w - run) / 2                 # centre the symbols in their own glass
         for n, name in enumerate(names):
             if name == "list":
-                tb.append(f'<rect x="{gx + 7 + n * 30 - 3}" y="{gy + 3}" width="28" height="24" rx="7" '
+                tb.append(f'<rect x="{x0 + n * 30 - 6}" y="{gy + 3}" width="28" height="24" rx="7" '
                           f'fill="{p["body"]}" fill-opacity="0.9"/>')
-            tb.append(tool_glyph(p, name, gx + 7 + n * 30, gy + 7))
+            tb.append(tool_glyph(p, name, x0 + n * 30, gy + 7))
         tb.append(f'<text class="c" x="{gx + w / 2}" y="{cap_y}" text-anchor="middle" fill="{p["dim"]}">{caption}</text>')
         gx -= 8
 
@@ -720,10 +757,15 @@ def graph(p, g):
 
     # the year holds, and the only thing that repeats is the specular pass, a
     # slow highlight crossing the finished grid the way light crosses glass
-    body.append(f'<g class="cycle" clip-path="url(#tiles)"><rect y="{gy}" width="96" height="{grid_h:.1f}" fill="url(#sweep)" x="{gx - 220:.0f}" transform="skewX(-14)">'
-                f'<animate attributeName="x" values="{gx - 220:.0f};{gx + GRID_W + 70:.0f};{gx + GRID_W + 70:.0f}" '
-                f'keyTimes="0;{SWEEP_IN / SWEEP:.5f};1" calcMode="spline" keySplines="0.4 0 0.2 1;0 0 1 1" '
-                f'begin="{fill_in}s" dur="{SWEEP}s" repeatCount="indefinite"/></rect></g>')
+    # the highlight travels on a transform, so the band is one composited layer
+    # sliding across rather than a rect whose geometry is rebuilt every frame
+    travel = GRID_W + 290
+    body.append(f'<g class="cycle" clip-path="url(#tiles)"><g transform="skewX(-14)">'
+                f'<rect x="{gx - 220:.0f}" y="{gy}" width="96" height="{grid_h:.1f}" fill="url(#sweep)">'
+                f'<animateTransform attributeName="transform" type="translate" '
+                f'values="0 0;{travel:.0f} 0;{travel:.0f} 0" '
+                f'keyTimes="0;{SWEEP_IN / SWEEP:.5f};1" calcMode="spline" keySplines="{FADE_EASE};0 0 1 1" '
+                f'begin="{fill_in}s" dur="{SWEEP}s" repeatCount="indefinite"/></rect></g></g>')
 
     ly = gy + grid_h + 24
     body.append(f'<text class="g" x="{gx}" y="{ly:.1f}" fill="{p["dim"]}">{GTOTAL} contributions in the last year</text>')
