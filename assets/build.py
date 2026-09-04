@@ -124,6 +124,14 @@ def anim(attr, values, times, cycle):
             f'keyTimes="{k}" dur="{cycle}s" repeatCount="indefinite"/>')
 
 
+def reveal(t0, cycle, fade=0.18):
+    """A line arrives on a curve rather than snapping on, ready exactly at t0."""
+    times = [0, max(t0 - fade, 0) / cycle, t0 / cycle, 1]
+    return (f'<animate attributeName="opacity" calcMode="spline" values="0;0;1;1" '
+            f'keyTimes="{";".join(f"{t:.5f}" for t in times)}" '
+            f'keySplines="{FADE_EASE};{FADE_EASE};{FADE_EASE}" dur="{cycle}s" repeatCount="indefinite"/>')
+
+
 def mono(x, y, text, fill):
     return (f'<text x="{x:.1f}" y="{y}" class="m" fill="{fill}" xml:space="preserve" '
             f'textLength="{len(text) * CW:.1f}" lengthAdjust="spacingAndGlyphs">'
@@ -146,8 +154,7 @@ def terminal(p):
         if kind == "gap":
             continue
         if kind == "cmd":
-            out.append(f'<g opacity="0">{mono(x, y, PROMPT, p["dim"])}'
-                       f'{anim("opacity", [0, 1], [0, t0], cycle)}</g>')
+            out.append(f'<g opacity="0">{mono(x, y, PROMPT, p["dim"])}{reveal(t0, cycle)}</g>')
             still.append(mono(x, y, PROMPT, p["dim"]))
             if text:
                 clips.append(
@@ -170,8 +177,7 @@ def terminal(p):
                 cur_ot.append(steps[-1] + ENTER_S * 0.6)
         else:
             fill = p["dim"] if kind == "dim" else (p["key"] if kind == "key" else p["text"])
-            out.append(f'<g opacity="0">{mono(x, y, text, fill)}'
-                       f'{anim("opacity", [0, 1], [0, t0], cycle)}</g>')
+            out.append(f'<g opacity="0">{mono(x, y, text, fill)}{reveal(t0, cycle)}</g>')
             still.append(mono(x, y, text, fill))
 
     t = idle_at
@@ -360,52 +366,89 @@ KEYS = list(FOLDERS)
 CYCLE = DWELL * len(KEYS)
 
 
-EASE = "0 0 0.58 1"              # the ease-out curve Apple reaches for
-FADE = 0.28                      # a cross dissolve, inside the 0.2 to 0.5s HIG window
+# SwiftUI's smooth spring settles without overshoot, so movement decelerates
+# hard and stops, while a cross dissolve wants a symmetric curve. Neither list
+# may end in a semicolon: Chrome drops the whole animation if it does.
+EASE = "0 0 0.58 1"              # the plain ease-out, still used by the graph
+FADE_EASE = "0.4 0 0.2 1"        # symmetric, for opacity
+MOVE_EASE = "0.32 0.72 0 1"      # spring-like, for anything that travels
+FADE, SLIDE, DRIFT = 0.36, 0.5, 6.0
+
+
+def keyframes(attr, values, times, splines, dur, extra=""):
+    v = ";".join(str(x) for x in values)
+    k = ";".join(f"{t:.5f}" for t in times)
+    s = ";".join(splines)
+    return (f'<{"animateTransform" if attr == "translate" else "animate"} '
+            f'attributeName="{"transform" if attr == "translate" else attr}"'
+            f'{" type=\"translate\"" if attr == "translate" else ""} calcMode="spline" '
+            f'values="{v}" keyTimes="{k}" keySplines="{s}" dur="{dur}s" '
+            f'repeatCount="indefinite"{extra}/>')
 
 
 def show(i):
     """Pane i holds its slot, then cross dissolves with the pane taking over."""
     if i == 0:
-        values = "1;1;0;0;1"
-        times = [0, (DWELL - FADE) / CYCLE, DWELL / CYCLE, (CYCLE - FADE) / CYCLE, 1]
+        values, times = [1, 1, 0, 0, 1], [0, (DWELL - FADE) / CYCLE, DWELL / CYCLE,
+                                          (CYCLE - FADE) / CYCLE, 1]
     else:
         a, b = i * DWELL, (i + 1) * DWELL
-        values = "0;0;1;1;0"
-        times = [0, (a - FADE) / CYCLE, a / CYCLE, (b - FADE) / CYCLE, b / CYCLE]
-    return (f'<animate attributeName="opacity" calcMode="spline" values="{values}" '
-            f'keyTimes="{";".join(f"{t:.5f}" for t in times)}" '
-            f'keySplines="{";".join([EASE] * 4)}" dur="{CYCLE}s" repeatCount="indefinite"/>')
+        values, times = [0, 0, 1, 1, 0, 0], [0, (a - FADE) / CYCLE, a / CYCLE,
+                                             (b - FADE) / CYCLE, b / CYCLE, 1]
+    return keyframes("opacity", values, times, [FADE_EASE] * (len(values) - 1), CYCLE)
 
 
-def cycled(parts, still_class=""):
+def settle(i):
+    """The listing arrives from DRIFT below and settles as it fades in."""
+    down, home = f"0 {DRIFT}", "0 0"
+    if i == 0:
+        values = [home, home, down, home]
+        times = [0, DWELL / CYCLE, (CYCLE - FADE) / CYCLE, 1]
+    else:
+        a, b = i * DWELL, (i + 1) * DWELL
+        values = [down, down, home, home, down]
+        times = [0, (a - FADE) / CYCLE, a / CYCLE, b / CYCLE, 1]
+    return keyframes("translate", values, times, [MOVE_EASE] * (len(values) - 1), CYCLE)
+
+
+def pill_track(y_of):
+    """One selection pill for the whole window, sliding row to row."""
+    values, times, splines = [], [], []
+    for i in range(len(KEYS)):
+        y = y_of(KEYS[i])
+        values += [y, y]
+        times += [i * DWELL / CYCLE, ((i + 1) * DWELL - SLIDE) / CYCLE]
+        splines += [MOVE_EASE, MOVE_EASE]
+    values.append(y_of(KEYS[0]))
+    times.append(1.0)
+    return keyframes("y", values, times, splines[:len(values) - 1], CYCLE)
+
+
+def cycled(parts, mover=None):
     """Wrap one fragment per folder so exactly one shows at a time."""
     out = ['<g class="cycle">']
     for i, part in enumerate(parts):
-        out.append(f'<g opacity="{1 if i == 0 else 0}">{part}{show(i)}</g>')
-    out.append(f'</g><g class="still{still_class}">{parts[0]}</g>')
+        extra = mover(i) if mover else ""
+        out.append(f'<g opacity="{1 if i == 0 else 0}">{show(i)}<g>{extra}{part}</g></g>')
+    out.append(f'</g><g class="still">{parts[0]}</g>')
     return "".join(out)
 
 
 def pane(p, key):
-    """Sidebar selection, column headers and rows for one folder."""
+    """The white sidebar label for one folder, then its column headers and rows."""
     spec = FOLDERS[key]
     ox = oy = MARGIN
     cx = ox + SIDE
-    out = []
-
-    # the selection pill sits on top of the sidebar row it covers
     sy = oy + FBAR + 28 + SIDEBAR.index(key) * 28
-    out.append(f'<rect x="{ox + 8}" y="{sy}" width="{SIDE - 16}" height="26" rx="13" fill="{p["sel"]}"/>')
-    out.append(side_glyph(key, ox + 18, sy + 5, "#ffffff"))
-    out.append(f'<text class="b" x="{ox + 42}" y="{sy + 17}" fill="#ffffff">{key}</text>')
+    label = (side_glyph(key, ox + 18, sy + 5, "#ffffff")
+             + f'<text class="b" x="{ox + 42}" y="{sy + 17}" fill="#ffffff">{key}</text>')
 
-    # column headers, sorted by Name ascending
+    out = []
     hy = oy + FBAR
     for sx in spec["rules"]:
         out.append(f'<path d="M{cx + sx} {hy + 6}v{HEADER - 12}" stroke="{p["hair"]}" stroke-width="1"/>')
-    for label, lx, anchor in spec["columns"]:
-        out.append(f'<text class="s" x="{cx + lx}" y="{hy + 17}" text-anchor="{anchor}" fill="{p["dim"]}">{label}</text>')
+    for lbl, lx, anchor in spec["columns"]:
+        out.append(f'<text class="s" x="{cx + lx}" y="{hy + 17}" text-anchor="{anchor}" fill="{p["dim"]}">{lbl}</text>')
     out.append(f'<path d="M{cx + spec["rules"][0] - 18} {hy + 14}l3.5-4 3.5 4" fill="none" stroke="{p["dim"]}" '
                f'stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>')
 
@@ -418,14 +461,14 @@ def pane(p, key):
                        f'stroke-linecap="round" stroke-linejoin="round"/>')
         out.append(row_icon(spec["icon"], cx + 26, y + 4, p))
         out.append(f'<text class="b" x="{cx + 50}" y="{y + 16}" fill="{p["text"]}">{cells[0]}</text>')
-        for (label, lx, anchor), value in zip(spec["columns"][1:], cells[1:]):
+        for (lbl, lx, anchor), value in zip(spec["columns"][1:], cells[1:]):
             if isinstance(value, tuple):      # a Finder tag: coloured dot plus name
                 out.append(f'<circle cx="{cx + lx + 4}" cy="{y + 12}" r="4.5" fill="{value[1]}"/>')
                 out.append(f'<text class="b" x="{cx + lx + 16}" y="{y + 16}" fill="{p["dim"]}">{value[0]}</text>')
             else:
                 out.append(f'<text class="b" x="{cx + lx}" y="{y + 16}" text-anchor="{anchor}" '
                            f'fill="{p["dim"]}">{html.escape(value)}</text>')
-    return "".join(out)
+    return label, "".join(out)
 
 
 def finder(p):
@@ -439,12 +482,25 @@ def finder(p):
     body.append(f'<rect x="{ox}" y="{oy}" width="{SIDE}" height="{FH}" fill="{p["bar"]}"/>')
     body.append(f'<path d="M{cx} {oy + FBAR}v{FH - FBAR}" stroke="{p["hair"]}" stroke-opacity="0.7" stroke-width="1"/>')
     body.append(f'<text class="s" x="{ox + 18}" y="{oy + FBAR + 18}" fill="{p["head"]}">Favourites</text>')
-    for n, item in enumerate(SIDEBAR):
-        y = oy + FBAR + 28 + n * 28
+
+    def row_y(item):
+        return oy + FBAR + 28 + SIDEBAR.index(item) * 28
+
+    for item in SIDEBAR:
+        y = row_y(item)
         body.append(side_glyph(item, ox + 18, y + 5, "#4d9dfb"))
         body.append(f'<text class="b" x="{ox + 42}" y="{y + 17}" fill="{p["text"]}">{item}</text>')
+
+    # the selection is one pill that travels, rather than three that blink
+    body.append(f'<rect class="cycle" x="{ox + 8}" y="{row_y(KEYS[0])}" width="{SIDE - 16}" height="26" '
+                f'rx="13" fill="{p["sel"]}">{pill_track(row_y)}</rect>')
+    body.append(f'<rect class="still" x="{ox + 8}" y="{row_y(KEYS[0])}" width="{SIDE - 16}" height="26" '
+                f'rx="13" fill="{p["sel"]}"/>')
+
     body.append(f'<path d="M{cx} {oy + FBAR + HEADER}h{FW - SIDE}" stroke="{p["hair"]}" stroke-width="1"/>')
-    body.append(cycled([pane(p, key) for key in KEYS]))
+    panes = [pane(p, key) for key in KEYS]
+    body.append(cycled([label for label, _ in panes]))
+    body.append(cycled([listing for _, listing in panes], settle))
     body.append(tail)
 
     # toolbar, above the clip so the glyphs stay crisp
@@ -465,8 +521,8 @@ def finder(p):
     listing = ". ".join(
         key + " holds " + ", ".join(row[0] for row in FOLDERS[key]["rows"]) for key in KEYS)
     return f'''<svg xmlns="http://www.w3.org/2000/svg" width="{FW + MARGIN * 2}" height="{FH + MARGIN * 2}" viewBox="0 0 {FW + MARGIN * 2} {FH + MARGIN * 2}" role="img" aria-labelledby="t d">
-<title id="t">A Finder window walking through projects, focus and toolbox</title>
-<desc id="d">A macOS Tahoe Finder window in list view. The sidebar selection moves from projects to focus to toolbox every {DWELL:.0f} seconds and the listing follows it. {html.escape(listing)}.</desc>
+<title id="t">A Finder window walking through {", ".join(KEYS[:-1])} and {KEYS[-1]}</title>
+<desc id="d">A macOS Tahoe Finder window in list view. The sidebar selection slides from one folder to the next every {DWELL:.0f} seconds and the listing cross dissolves with it. {html.escape(listing)}.</desc>
 <style>
 .w {{ {UI} font-size: 13px; font-weight: 600; }}
 .b {{ {UI} font-size: 13px; }}
@@ -481,6 +537,7 @@ def finder(p):
 {"".join(tb)}
 </svg>
 '''
+
 
 # --------------------------------------------------------------------------
 # contributions
@@ -516,7 +573,7 @@ GRID_W = GW - GPAD * 2 - LABEL
 GAP = 3.2                            # 53 columns land exactly on the grid width
 STEP = (GRID_W + GAP) / 53
 CELL = STEP - GAP
-REVEAL, GFADE = 0.045, 0.32          # a column every 45ms, each fading in over 320ms
+REVEAL, GFADE = 0.03, 0.5            # a column every 30ms, each fading in over 500ms
 SWEEP, SWEEP_IN = 7.0, 1.7           # then a specular pass every 7s, crossing in 1.7s
 
 GRAPH_LIGHT = dict(empty="#ebedf0", scale=["#9be9a8", "#40c463", "#30a14e", "#216e39"])
@@ -559,15 +616,16 @@ def graph(p, g):
         still.extend(col)
         t = 0.4 + i * REVEAL
         cells.append(f'<g opacity="1">{"".join(col)}<animate attributeName="opacity" calcMode="spline" '
-                     f'values="0;0;1" keyTimes="0;{t / fill_in:.5f};{(t + GFADE) / fill_in:.5f}" '
-                     f'keySplines="{EASE};{EASE}" dur="{fill_in}s" repeatCount="1" fill="freeze"/></g>')
+                     f'values="0;0;1;1" keyTimes="0;{t / fill_in:.5f};{(t + GFADE) / fill_in:.5f};1" '
+                     f'keySplines="{FADE_EASE};{FADE_EASE};{FADE_EASE}" dur="{fill_in}s" '
+                     f'repeatCount="1" fill="freeze"/></g>')
     body.append(f'<g class="cycle">{"".join(cells)}</g><g class="still">{"".join(still)}</g>')
 
     # the year holds, and the only thing that repeats is the specular pass, a
     # slow highlight crossing the finished grid the way light crosses glass
     body.append(f'<g class="cycle" clip-path="url(#tiles)"><rect y="{gy}" width="96" height="{grid_h:.1f}" fill="url(#sweep)" x="{gx - 220:.0f}" transform="skewX(-14)">'
                 f'<animate attributeName="x" values="{gx - 220:.0f};{gx + GRID_W + 70:.0f};{gx + GRID_W + 70:.0f}" '
-                f'keyTimes="0;{SWEEP_IN / SWEEP:.5f};1" calcMode="spline" keySplines="0.42 0 0.58 1;0 0 1 1" '
+                f'keyTimes="0;{SWEEP_IN / SWEEP:.5f};1" calcMode="spline" keySplines="0.4 0 0.2 1;0 0 1 1" '
                 f'begin="{fill_in}s" dur="{SWEEP}s" repeatCount="indefinite"/></rect></g>')
 
     ly = gy + grid_h + 24
