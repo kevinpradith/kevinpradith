@@ -20,7 +20,3 @@
     <img alt="A year of GitHub contributions, drawn as a macOS panel whose weeks fill in from left to right, with the running total under the grid." src="https://raw.githubusercontent.com/kevinpradith/kevinpradith/main/assets/graph-light.svg?v=20" width="880">
   </picture>
 </p>
-
-<p align="center">
-  <sub>Drawn by hand in SVG, rebuilt every morning from whatever GitHub says I did.</sub>
-</p>
