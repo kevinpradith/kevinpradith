@@ -782,7 +782,11 @@ def graph(p, g):
     body.append(f'<text class="g" x="{lx + 5 * STEP + 6:.1f}" y="{ly:.1f}" fill="{p["dim"]}">More</text>')
     body.append(tail)
 
-    end = (GSTART + timedelta(days=7 * len(WEEKS) - 1)).strftime("%d %B %Y")
+    # the calendar pads the current week out to Saturday, and those days carry
+    # no data-date, so count only as far as the last real day or the label
+    # claims a year ending days from now
+    span = 7 * (len(WEEKS) - 1) + len(WEEKS[-1].rstrip("_")) - 1
+    end = (GSTART + timedelta(days=span)).strftime("%d %B %Y")
     return f'''<svg xmlns="http://www.w3.org/2000/svg" width="{GW + MARGIN * 2}" height="{GH + MARGIN * 2}" viewBox="0 0 {GW + MARGIN * 2} {GH + MARGIN * 2}" role="img" aria-labelledby="t d">
 <title id="t">{GTOTAL} contributions in the last year</title>
 <desc id="d">The GitHub contribution calendar for the year ending {end}, {GTOTAL} contributions in all, drawn as a macOS panel. The weeks fill in from left to right.</desc>
