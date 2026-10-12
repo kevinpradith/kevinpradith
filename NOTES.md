@@ -6,7 +6,7 @@ so that six months from now I do not have to rediscover any of it.
 
 ## What is actually here
 
-`README.md` is three centred `<picture>` blocks and a footer. Everything you
+`README.md` is three centred `<picture>` blocks, nothing else. Everything you
 see on the profile is six self hosted animated SVG files, drawn to match real
 macOS 26 Tahoe. No third party badge service, no shields.io, no
 github-readme-stats. Nothing calls out to anyone.

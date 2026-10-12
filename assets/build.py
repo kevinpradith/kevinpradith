@@ -1,10 +1,11 @@
 """Generate the macOS desktop pieces used by the profile README.
 
-Two components share one palette and one window chrome:
+Three components share one palette and one window chrome:
 
   hero-<theme>.svg    an animated zsh session, 900x556  (1 : 1.618)
-  finder-<theme>.svg  one Finder window cycling projects, focus and toolbox,
-                      900x344  (1 : 2.618)
+  finder-<theme>.svg  one Finder window cycling projects, certifications and
+                      awards, 900x344  (1 : 2.618)
+  graph-<theme>.svg   a year of contributions, 900x212
 
 Window metrics follow macOS: 12pt traffic lights on 20pt centres, 28pt
 title bar on the terminal and a 52pt unified toolbar on Finder, 10pt corner
