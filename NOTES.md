@@ -123,11 +123,27 @@ when checking a single glyph.
 
 ## The daily refresh
 
-`.github/workflows/refresh.yml` runs the build at 05:17 UTC and commits only
-when the drawing actually changed. It commits as me, so every refresh counts as
-a contribution and the calendar will never show an empty day again. That was a
-deliberate choice. The alternative, if it ever stops being worth it, is `on:
-push` instead of the cron, which refreshes only on days I actually write code.
+`.github/workflows/refresh.yml` runs the build and commits whatever moved. It
+commits as me, so every refresh counts as a contribution and the calendar will
+never show an empty day again. That was a deliberate choice.
+
+The cron says 17:47 UTC but the run lands around 07:00 Jakarta, because GitHub
+delivers the schedule event hours late. Measured over 37 consecutive days: 37
+runs, no drops, no failures, delay 3.8 to 7.0 hours, median 4.5 in early
+September and 6.2 by mid October. It is their scheduler, and the docs only
+offer "schedule your workflow to run at a different time of the hour", which
+this already did at minute 17. So the cron is deliberately offset rather than
+set to the time I want. Re-measure and move the hour if the drift changes:
+
+```sh
+gh run list -L 100 --json createdAt,event -q '.[]|select(.event=="schedule")|.createdAt'
+```
+
+`on: push` is not the fix, and I checked. A push made by the workflow with
+`GITHUB_TOKEN` cannot trigger another workflow, which is what stops the loop,
+but it also means nothing re-runs on its own. Pushes to my other repos do not
+count either, only this one, so the artwork would freeze for weeks at a time
+and the daily contribution would go with it.
 
 ## Ruled out, do not try again
 

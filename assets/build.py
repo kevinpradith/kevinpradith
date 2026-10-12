@@ -27,6 +27,7 @@ import pathlib
 import re
 import urllib.request
 from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 USER = "kevinpradith"
 
@@ -64,6 +65,20 @@ def projects_rows(limit=7):
                      (lang, LANG_TINT.get(lang, "#8a8a8e"))))
     rows.sort(key=lambda row: row[0])
     return rows
+
+
+def prose(items):
+    """The desc text reads a list out loud, so join it the way a sentence does."""
+    if len(items) < 2:
+        return items[0] if items else ""
+    return ", ".join(items[:-1]) + " and " + items[-1]
+
+
+def ls_line(names, width):
+    """The `ls` output, four spaces apart, cut to the lines the terminal has."""
+    while len(names) > 1 and len("    ".join(names)) > width:
+        names = names[:-1]
+    return "    ".join(names)
 
 
 def contribution_year():
@@ -158,8 +173,15 @@ CHAR_S, ENTER_S, OUT_S, BLANK_S = 0.075, 0.28, 0.26, 0.13
 START_S, HOLD_S, BLINK_S = 0.6, 4.8, 0.53
 PROMPT = "kevin@pradith ~ % "   # zsh with PROMPT='%n@%m %1~ %# '
 
+# The terminal used to carry a typed-out login date and project list, which
+# froze the day they were written while the Finder beside them read the API.
+# Both come off the same data now, so nothing on screen can go stale.
+NOW = datetime.now(ZoneInfo("Asia/Jakarta"))
+PROJECTS = projects_rows()
+PROJECT_NAMES = [r[0] for r in PROJECTS]
+
 SCRIPT = [
-    ("dim", "Last login: Fri Sep  4 09:41:12 on ttys001"),
+    ("dim", f"Last login: {NOW.strftime('%a %b %e %H:%M:%S')} on ttys001"),
     ("gap", ""),
     ("cmd", "whoami"),
     ("out", "kevin, security researcher and builder"),
@@ -170,7 +192,7 @@ SCRIPT = [
     ("out", "a report a developer can act on, not a severity number."),
     ("gap", ""),
     ("cmd", "ls ~/projects"),
-    ("key", "convert.in    qr.in    snipsearch    stelegraphy"),
+    ("key", ls_line(PROJECT_NAMES, COLS)),
     ("gap", ""),
     ("cmd", "security --focus"),
     ("out", "authorization, SSRF, exposed configuration."),
@@ -304,7 +326,7 @@ def terminal(p):
 
     return f'''<svg xmlns="http://www.w3.org/2000/svg" width="{TW + MARGIN * 2}" height="{TH + MARGIN * 2}" viewBox="0 0 {TW + MARGIN * 2} {TH + MARGIN * 2}" role="img" aria-labelledby="t d">
 <title id="t">kevin, security researcher and builder</title>
-<desc id="d">A macOS terminal window typing out a zsh session: whoami returns "kevin, security researcher and builder"; the principles are that files stay on your machine, with no upload, no telemetry and no build step, and that a report should be one a developer can act on rather than a severity number; the projects are convert.in, qr.in, snipsearch and stelegraphy; the security focus is authorization, SSRF and exposed configuration; the stack is typescript, node, powershell, python, burp, docker and k8s.</desc>
+<desc id="d">A macOS terminal window typing out a zsh session: whoami returns "kevin, security researcher and builder"; the principles are that files stay on your machine, with no upload, no telemetry and no build step, and that a report should be one a developer can act on rather than a severity number; the projects are {html.escape(prose(PROJECT_NAMES))}; the security focus is authorization, SSRF and exposed configuration; the stack is typescript, node, powershell, python, burp, docker and k8s.</desc>
 <style>
 .m {{ {MONO} font-size: {FS}px; }}
 .u {{ {UI} font-size: {HEADLINE}px; font-weight: 700; }}
@@ -364,7 +386,7 @@ FOLDERS = {
         columns=[("Name", 50, "start"), ("Date Modified", 300, "start"),
                  ("Size", 550, "end"), ("Tags", 574, "start")],
         rules=[290, 460, 560],
-        rows=projects_rows()),
+        rows=PROJECTS),
     "certifications": dict(
         icon="doc", disclosure=False,
         columns=[("Name", 50, "start"), ("Kind", 330, "start"),
@@ -813,7 +835,21 @@ def graph(p, g):
 '''
 
 
+def check():
+    """The two list helpers, checked on every build so a bad edit fails here
+    rather than shipping a terminal line that reads wrong."""
+    assert prose([]) == ""
+    assert prose(["qr.in"]) == "qr.in"
+    assert prose(["a", "b"]) == "a and b"
+    assert prose(["a", "b", "c"]) == "a, b and c"
+    assert ls_line([], COLS) == ""
+    assert ls_line(["a", "b"], COLS) == "a    b"
+    assert ls_line(["aaa", "bbb", "ccc"], 12) == "aaa    bbb"
+    assert ls_line(["one-very-long-repository-name"], 5) == "one-very-long-repository-name"
+
+
 if __name__ == "__main__":
+    check()
     for name, palette in THEMES:
         with open(f"assets/hero-{name}.svg", "w") as f:
             f.write(terminal(palette))
